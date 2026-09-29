@@ -1,4 +1,6 @@
 {
+  "framework": null,
+  "buildCommand": "npx expo export -p web",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/groups/:groupId/today", "destination": "/groups/[groupId]/today.html" },
