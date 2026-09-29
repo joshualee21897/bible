@@ -25,7 +25,14 @@
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Flock to access your photos so you can share a check-in picture.",
+          "cameraPermission": "Allow Flock to access your camera so you can take a check-in picture."
+        }
+      ]
     ]
   }
 }
