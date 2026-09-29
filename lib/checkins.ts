@@ -20,6 +20,7 @@ export type MemberWithStats = {
   display_name: string;
   avatar_color: string;
   checkin_count: number;
+  last_checkin_at: string | null;
 };
 
 async function requireUserId(): Promise<string> {
@@ -113,15 +114,20 @@ export async function updateCheckin(
 export async function getGroupMembersWithCheckinCounts(groupId: string): Promise<MemberWithStats[]> {
   const [membersResult, checkinsResult] = await Promise.all([
     supabase.from('group_members').select('user_id, profiles(display_name, avatar_color)').eq('group_id', groupId),
-    supabase.from('checkins').select('user_id').eq('group_id', groupId),
+    supabase.from('checkins').select('user_id, created_at').eq('group_id', groupId),
   ]);
 
   if (membersResult.error) throw membersResult.error;
   if (checkinsResult.error) throw checkinsResult.error;
 
   const counts = new Map<string, number>();
+  const lastCheckinAt = new Map<string, string>();
   for (const row of checkinsResult.data ?? []) {
     counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+    const existing = lastCheckinAt.get(row.user_id);
+    if (!existing || row.created_at > existing) {
+      lastCheckinAt.set(row.user_id, row.created_at);
+    }
   }
 
   return (membersResult.data ?? [])
@@ -131,6 +137,7 @@ export async function getGroupMembersWithCheckinCounts(groupId: string): Promise
       display_name: row.profiles.display_name,
       avatar_color: row.profiles.avatar_color,
       checkin_count: counts.get(row.user_id) ?? 0,
+      last_checkin_at: lastCheckinAt.get(row.user_id) ?? null,
     }));
 }
 
@@ -161,12 +168,19 @@ export async function getSignedPhotoUrl(photoPath: string): Promise<string | nul
   return data.signedUrl;
 }
 
-export function getCurrentChapterNumber(startDate: string, maxChapter: number): number {
+export function getDayNumber(startDate: string): number {
   const start = new Date(`${startDate}T00:00:00`);
   const now = new Date();
   const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayIndex = Math.floor((nowMidnight.getTime() - startMidnight.getTime()) / (1000 * 60 * 60 * 24));
-  const dayNumber = Math.max(1, dayIndex + 1);
-  return Math.min(dayNumber, maxChapter);
+  return Math.max(1, dayIndex + 1);
+}
+
+export function getCurrentChapterNumber(startDate: string, maxChapter: number): number {
+  return Math.min(getDayNumber(startDate), maxChapter);
+}
+
+export function isBookFinished(startDate: string, maxChapter: number): boolean {
+  return getDayNumber(startDate) > maxChapter;
 }

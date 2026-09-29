@@ -6,10 +6,11 @@ import { buildTreeGrid } from './tree-sprites';
 
 type Props = {
   stage: TreeStage;
+  resting?: boolean;
   pixelSize?: number;
 };
 
-export function Tree({ stage, pixelSize = 4 }: Props) {
-  const grid = useMemo(() => buildTreeGrid(stage), [stage]);
+export function Tree({ stage, resting = false, pixelSize = 4 }: Props) {
+  const grid = useMemo(() => buildTreeGrid(stage, resting), [stage, resting]);
   return <PixelGrid grid={grid} pixelSize={pixelSize} />;
 }

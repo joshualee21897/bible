@@ -87,3 +87,15 @@ export async function joinGroupByCode(code: string): Promise<Group> {
   if (error) throw error;
   return data as Group;
 }
+
+export async function changeGroupBook(groupId: string, book: string, startDate: string): Promise<Group> {
+  const { data, error } = await supabase
+    .from('groups')
+    .update({ book, start_date: startDate })
+    .eq('id', groupId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}

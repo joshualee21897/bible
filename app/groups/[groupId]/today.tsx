@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { getChapterCount } from '../../../lib/bible-books';
+import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
 import { getChapterVerses } from '../../../lib/bible';
 import { useAuth } from '../../../lib/auth-context';
 import {
@@ -22,20 +22,29 @@ import {
   getMyCheckedChapters,
   getMyCheckin,
   getSignedPhotoUrl,
+  isBookFinished,
   updateCheckin,
   uploadCheckinPhoto,
   type Checkin,
 } from '../../../lib/checkins';
+import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
 
+function todayAsInputDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function TodayScreen() {
-  const { group } = useGroup();
+  const { group, refresh: refreshGroup } = useGroup();
   const { session } = useAuth();
 
   const maxChapter = group ? getChapterCount(group.book) : 1;
   const todayChapter = group ? getCurrentChapterNumber(group.start_date, maxChapter) : 1;
+  const finished = group ? isBookFinished(group.start_date, maxChapter) : false;
 
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [nextBook, setNextBook] = useState(BIBLE_BOOKS[0].name);
+  const [changingBook, setChangingBook] = useState(false);
   const [checkedChapters, setCheckedChapters] = useState<Set<number>>(new Set());
   const [currentCheckin, setCurrentCheckin] = useState<Checkin | null>(null);
   const [reflectionDraft, setReflectionDraft] = useState('');
@@ -44,11 +53,15 @@ export default function TodayScreen() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Re-anchor to today's chapter whenever the group's book or start date
+  // actually changes (initial load, or after picking a new book) — but not
+  // on every render, so a manually selected catch-up chapter sticks.
   useEffect(() => {
-    if (group && selectedChapter === null) {
-      setSelectedChapter(todayChapter);
+    if (group) {
+      setSelectedChapter(getCurrentChapterNumber(group.start_date, getChapterCount(group.book)));
     }
-  }, [group, todayChapter, selectedChapter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group?.book, group?.start_date]);
 
   const loadChapterState = useCallback(
     async (chapter: number) => {
@@ -156,11 +169,47 @@ export default function TodayScreen() {
     }
   }
 
+  async function handleChangeBook() {
+    if (!group) return;
+    setChangingBook(true);
+    try {
+      await changeGroupBook(group.id, nextBook, todayAsInputDate());
+      refreshGroup();
+    } catch (error) {
+      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+    } finally {
+      setChangingBook(false);
+    }
+  }
+
   if (!group || selectedChapter === null) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
       </View>
+    );
+  }
+
+  if (finished) {
+    return (
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.reference}>You've finished {group.book}!</Text>
+        <Text style={styles.label}>Our garden is proud of how far we've come. Pick the next book to keep reading.</Text>
+        <ScrollView horizontal style={styles.bookPicker} showsHorizontalScrollIndicator={false}>
+          {BIBLE_BOOKS.map((b) => (
+            <Pressable
+              key={b.name}
+              onPress={() => setNextBook(b.name)}
+              style={[styles.chip, nextBook === b.name && styles.chipSelected]}
+            >
+              <Text style={[styles.chipText, nextBook === b.name && styles.chipTextSelected]}>{b.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Pressable style={styles.button} onPress={handleChangeBook} disabled={changingBook}>
+          <Text style={styles.buttonText}>{changingBook ? 'Starting…' : `Start reading ${nextBook}`}</Text>
+        </Pressable>
+      </ScrollView>
     );
   }
 
@@ -266,6 +315,10 @@ const styles = StyleSheet.create({
   },
   versesLoading: {
     marginVertical: 24,
+  },
+  bookPicker: {
+    flexDirection: 'row',
+    marginVertical: 8,
   },
   verses: {
     gap: 6,

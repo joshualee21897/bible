@@ -21,6 +21,7 @@ function GroupTabs() {
       <Tabs.Screen name="today" options={{ title: 'Today' }} />
       <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
       <Tabs.Screen name="garden" options={{ title: 'Garden' }} />
+      <Tabs.Screen name="shop" options={{ href: null, title: 'Shop' }} />
     </Tabs>
   );
 }

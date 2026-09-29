@@ -8,10 +8,12 @@ function emptyGrid(): PixelGridData {
   return Array.from({ length: SIZE }, () => Array<PaletteKey | null>(SIZE).fill(null));
 }
 
-function paintGround(grid: PixelGridData) {
+function paintGround(grid: PixelGridData, resting: boolean) {
+  const light = resting ? 'grassRestingLight' : 'grassLight';
+  const dark = resting ? 'grassRestingDark' : 'grassDark';
   for (let x = 0; x < SIZE; x++) {
-    grid[SIZE - 1][x] = x % 2 === 0 ? 'grassLight' : 'grassDark';
-    grid[SIZE - 2][x] = 'grassLight';
+    grid[SIZE - 1][x] = x % 2 === 0 ? light : dark;
+    grid[SIZE - 2][x] = light;
   }
 }
 
@@ -38,40 +40,43 @@ function paintCircle(
   }
 }
 
-function paintTrunk(grid: PixelGridData, cx: number, top: number, bottom: number, halfWidth: number) {
+function paintTrunk(grid: PixelGridData, cx: number, top: number, bottom: number, halfWidth: number, fill: PaletteKey) {
   for (let y = top; y <= bottom; y++) {
     for (let x = cx - halfWidth; x <= cx + halfWidth; x++) {
       if (y < 0 || y >= SIZE || x < 0 || x >= SIZE) continue;
       const isEdge = x === cx - halfWidth || x === cx + halfWidth;
-      grid[y][x] = isEdge ? 'outline' : 'bark';
+      grid[y][x] = isEdge ? 'outline' : fill;
     }
   }
 }
 
-export function buildTreeGrid(stage: TreeStage): PixelGridData {
+export function buildTreeGrid(stage: TreeStage, resting = false): PixelGridData {
   const grid = emptyGrid();
-  paintGround(grid);
+  paintGround(grid, resting);
   const cx = SIZE / 2;
+  const bark = resting ? 'barkResting' : 'bark';
+  const leavesLight = resting ? 'leavesRestingLight' : 'leavesLight';
+  const leavesDark = resting ? 'leavesRestingDark' : 'leavesDark';
 
   if (stage === 'seed') {
-    paintCircle(grid, cx, GROUND_Y - 1, 2, 'bark');
+    paintCircle(grid, cx, GROUND_Y - 1, 2, bark);
     return grid;
   }
 
   if (stage === 'sprout') {
-    paintTrunk(grid, cx, GROUND_Y - 4, GROUND_Y, 0);
-    paintCircle(grid, cx, GROUND_Y - 5, 2, 'leavesLight');
+    paintTrunk(grid, cx, GROUND_Y - 4, GROUND_Y, 0, bark);
+    paintCircle(grid, cx, GROUND_Y - 5, 2, leavesLight);
     return grid;
   }
 
   if (stage === 'sapling') {
-    paintTrunk(grid, cx, GROUND_Y - 8, GROUND_Y, 1);
-    paintCircle(grid, cx, GROUND_Y - 10, 5, 'leavesLight', 'leavesDark');
+    paintTrunk(grid, cx, GROUND_Y - 8, GROUND_Y, 1, bark);
+    paintCircle(grid, cx, GROUND_Y - 10, 5, leavesLight, leavesDark);
     return grid;
   }
 
-  paintTrunk(grid, cx, GROUND_Y - 12, GROUND_Y, 2);
-  paintCircle(grid, cx, GROUND_Y - 17, 8, 'leavesLight', 'leavesDark');
+  paintTrunk(grid, cx, GROUND_Y - 12, GROUND_Y, 2, bark);
+  paintCircle(grid, cx, GROUND_Y - 17, 8, leavesLight, leavesDark);
 
   if (stage === 'fruiting') {
     const fruitSpots: [number, number][] = [

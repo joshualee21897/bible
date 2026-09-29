@@ -16,3 +16,13 @@ export function getTreeStage(checkinCount: number): TreeStage {
 export function getTreeStageLabel(stage: TreeStage): string {
   return STAGE_THRESHOLDS.find((entry) => entry.stage === stage)?.label ?? 'Seed';
 }
+
+const RESTING_AFTER_DAYS = 3;
+
+// A tree that hasn't grown yet (a seed) isn't "resting" — it just hasn't
+// started. Resting only applies once someone has read at least once.
+export function isTreeResting(lastCheckinAt: string | null, checkinCount: number): boolean {
+  if (checkinCount === 0 || !lastCheckinAt) return false;
+  const daysSinceLastCheckin = (Date.now() - new Date(lastCheckinAt).getTime()) / (1000 * 60 * 60 * 24);
+  return daysSinceLastCheckin >= RESTING_AFTER_DAYS;
+}
