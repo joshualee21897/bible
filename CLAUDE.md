@@ -1,0 +1,168 @@
+# Project brief: group Bible reading app (working name: "Flock")
+
+## About me and how to work with me
+- I'm not a professional developer. Explain what you're doing in plain language, one step at a time.
+- Before writing code for each phase, show me a short plan and wait for my OK.
+- When I need to do something outside the code (Supabase dashboard, Vercel, terminal commands), give me exact click-by-click or copy-paste steps.
+- Ask before adding any new library. Keep dependencies few.
+- Never put secret keys in the code. Use a `.env` file and make sure it's in `.gitignore`.
+- After each phase, tell me how to test it on my phone and what to check.
+
+## What we're building
+A community Bible reading app. Friends form groups (cell group, family, friends), read the same chapter each day, and check in. Each person has their own tree that grows as they read, and a group's trees together form a shared garden. A lamb is the app's mascot and lives in every garden.
+
+Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that grows with your steps, with friend groups). Ours is for groups, not pairs.
+
+## Platform plan
+- **Now:** a web app my friends can open from a link and "Add to Home Screen."
+- **Later:** the same code built into iPhone and Android apps.
+- **So:** use **Expo (React Native) with Expo Router and TypeScript**, exported to web and deployed on **Vercel**. Later use **EAS Build** for the app stores.
+- **Backend:** **Supabase** (auth, Postgres database, storage for photos).
+
+## Core rules of the app
+1. **Reading is the check-in.** Tapping "I've read today's chapter" counts as the check-in.
+2. **Reflection and photo are optional.** After reading, a person can add a short reflection, a photo (BeReal-style, like their Bible and coffee), both, or neither.
+3. **One chapter a day.** The group picks a book and a start date. Day 1 = chapter 1, Day 2 = chapter 2, and so on.
+4. **Catch-up is allowed.** Anyone can read and check in on earlier chapters they missed.
+5. **A person can be in several groups.** A check-in belongs to one group. If someone is in two groups reading different books, they check in separately.
+6. **Grace, not guilt.** See the wording rules below.
+
+## Bible text
+- Use the **KJV (public domain)** only for now.
+- Bundle a public-domain KJV JSON file in the project (e.g., from the scrollmapper/bible_databases repo on GitHub). Confirm the license says public domain before using it.
+- Bundling it means reading works offline and we don't depend on an outside API.
+
+## Growth and garden
+
+### Personal tree (stage based on total check-ins in that group)
+| Check-ins | Stage |
+|---|---|
+| 0 | Seed |
+| 3 | Sprout |
+| 10 | Sapling |
+| 25 | Tree |
+| 50 | Fruit-bearing tree |
+
+- If someone hasn't checked in for 3+ days, their tree shows as **resting** (sleepy, softer colors). It never shrinks, wilts, or dies. It wakes up on their next check-in.
+
+### Water drops (currency, per group)
+- Reading a chapter earns 10 drops.
+- Adding a reflection earns +3, and adding a photo earns +3.
+- Drops are spent on shared garden items, so everyone chips in together.
+
+### Garden animals and items (bought with drops; show the verse when unlocked)
+| Item | Verse | Price |
+|---|---|---|
+| Dove | Genesis 8:11 | 50 |
+| Sparrow | Matthew 10:29–31 | 50 |
+| Fish (in a small pond) | John 21:6 | 80 |
+| Raven | 1 Kings 17:6 | 80 |
+| Donkey | Zechariah 9:9 | 120 |
+| Eagle | Isaiah 40:31 | 150 |
+| Lion | Revelation 5:5 | 250 |
+| Well, bench, fence, lanterns | none | 40–100 |
+
+Treat the prices as a starting point. Keep them in one config file so I can tweak them.
+
+### The lamb (mascot)
+- It lives in every garden and wanders between the trees.
+- Its moods:
+  - **Happy:** the group is doing well this week.
+  - **Waiting by your tree:** you haven't read today.
+  - **Sleeping:** at night.
+- It's used in reminders, e.g., "The lamb is waiting by your tree."
+
+### Weekly group goal and Harvest Supper
+- The group sets a target of how many days a week each person aims to read (default 5).
+- If the group reaches 80% of its combined target for the week, the garden **bears fruit** for that week and shows a **Harvest Supper** card: a prompt to meet up in person and share what they read.
+
+## Wording rules (important)
+- Never use words like "loser," "failed," "missed," "streak lost," "wilted," or "dead."
+- Use "resting" for inactive trees.
+- Nudges should be warm, e.g., "Your garden misses you" or "The lamb is waiting by your tree."
+- Speak in "we": "Our garden grew this week."
+- Use sentence case and plain words. Buttons say exactly what happens ("Mark as read," "Post reflection").
+
+## Screens
+1. **Sign in:** email magic link (simplest for testing). Add Google and Apple sign-in later, in Phase 3.
+2. **My groups:** a list of my groups, plus "Create group" (name, book, start date, weekly target) and "Join group" (6-character invite code).
+3. **Today (per group):** today's chapter in KJV, readable and scrollable. At the bottom:
+   - A "Mark as read" button.
+   - After tapping it, optional "Add a reflection" and "Add a photo" (camera or gallery via `expo-image-picker`, which also works on web).
+   - A small list of earlier chapters I haven't checked in yet, for catch-up.
+4. **Group feed:** everyone's check-ins, newest first, showing name, chapter, reflection, and photo if any. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
+5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the drop balance, and a shop button.
+6. **Shop:** buy animals and items with group drops. Show the verse when bought.
+7. **Profile:** name and avatar color. Sign out.
+
+## Database (Supabase)
+Write these as SQL migrations I can run in the Supabase SQL editor.
+
+- `profiles`: id (= auth user id), display_name, avatar_color, created_at
+- `groups`: id, name, invite_code (unique), book, start_date, weekly_target (default 5), created_by, created_at
+- `group_members`: group_id, user_id, role (owner/member), joined_at
+- `checkins`: id, group_id, user_id, book, chapter, reflection (nullable), photo_path (nullable), created_at
+  - Unique on (group_id, user_id, book, chapter) so the same chapter can't be counted twice.
+- `group_items`: id, group_id, item_key, bought_by, created_at
+
+Compute drops (earned minus spent) and tree stages from the data, rather than storing them, so they can't get out of sync.
+
+### Security (must have)
+- Turn on **row-level security** on every table.
+- A user can only read groups, members, check-ins, and items for groups they belong to.
+- A user can only create check-ins for themselves.
+- Photos go in a **private** storage bucket, `checkin-photos`, with the path `group_id/user_id/filename`. Only group members can view them, via signed URLs.
+- Joining a group requires a valid invite code.
+
+## Art direction: 8-bit pixel art
+The style should feel like the Charlie app: chunky pixel sprites, thick black outlines, flat colors, lots of white space. The designs must be **original**; don't copy Charlie's characters.
+
+- **Sprites as code:** draw every sprite as a pixel grid in code (e.g., a TypeScript array of palette keys) and render it with SVG `<rect>`s or a canvas scaled up. There should be no downloaded image files, so art is easy to tweak.
+- **Grid sizes:**
+  - The lamb and animals are around 24×24 pixels.
+  - Trees are around 32×32 pixels, with one sprite per stage plus a "resting" variant.
+- **Crisp rendering:** scale up by whole numbers only (×3, ×4), and use `image-rendering: pixelated` for any bitmap.
+- **Palette (limited, earthy, warm):**
+  - Outline: black `#000000`
+  - Lamb wool: `#F7F3E8`, with shade `#D9D2C0`
+  - Grass: `#6DAA45` and `#4E8A32`
+  - Bark: `#7A4E2D`
+  - Leaves: `#3F8F4A` and `#77C063`
+  - Fruit: `#C8403A`
+  - Water and pond: `#8EC5F0` and `#5B9BD5`
+  - Sky and background: white `#FFFFFF`
+- **Lamb design:** round fluffy white body, small black face and legs, tiny ears, and big friendly eyes. Give it a simple 2-frame idle animation (a bob or blink). Draw one sprite for each mood (happy, waiting, sleeping with "z z").
+- **Type:**
+  - Use a pixel font (e.g., "Pixelify Sans" or "Silkscreen" from Google Fonts) for headings, numbers, and buttons.
+  - Use a highly readable serif (e.g., "Literata") for the Bible text and reflections. Scripture must be comfortable to read.
+- **UI elements:** chunky square-ish buttons with 2–3 px black borders and a hard offset shadow (no blur), plus a pixel-style progress bar for the weekly goal.
+- **Motion:** keep it minimal. Use the lamb's idle animation and a small celebration when a tree grows a stage.
+- Must look good on a phone screen first.
+
+## Phases
+
+### Phase 1 — Web MVP (goal: my friends can use it)
+- Expo project setup, Supabase connection, email sign-in.
+- Create/join group, Today screen with KJV and "Mark as read," optional reflection and photo, and the group feed.
+- A simple garden with each person's tree stage and the lamb.
+- Deploy to Vercel, with instructions for "Add to Home Screen" on iPhone and Android.
+
+### Phase 2 — Garden game
+- Water drops, the shop, animals and items with verses, resting trees, lamb moods, the weekly goal bar, and the Harvest Supper card.
+
+### Phase 3 — Real phone app
+- EAS Build, TestFlight (iOS) and Play internal testing (Android).
+- Push notifications (a daily reading reminder at a time the user picks, plus friend nudges).
+- Google and Apple sign-in, and a privacy policy page (Singapore PDPA).
+- Home-screen widget later.
+
+### Later ideas (don't build yet)
+- A prayer request board visible only within the group.
+- Other translations, after checking licensing.
+- A leader view for cell leaders.
+
+## Definition of done for Phase 1
+- I can create a group and share the code, and a friend can join from a different phone.
+- We both see the same chapter, can check in, and can see each other's check-ins and photos in the feed.
+- Trees show the right stage, and the lamb appears in the garden.
+- Someone who isn't in the group cannot see its content.
