@@ -115,12 +115,20 @@ export default function TodayScreen() {
     return list;
   }, [todayChapter, checkedChapters]);
 
-  async function handleMarkAsRead() {
-    if (!group || selectedChapter === null) return;
+  async function checkInWithPhoto(asset: ImagePicker.ImagePickerAsset) {
+    if (!group || selectedChapter === null || !session) return;
+
     setSaving(true);
     try {
-      const checkin = await createCheckin({ groupId: group.id, book: group.book, chapter: selectedChapter });
+      const path = await uploadCheckinPhoto(group.id, session.user.id, asset.uri, asset.mimeType ?? 'image/jpeg');
+      const checkin = await createCheckin({
+        groupId: group.id,
+        book: group.book,
+        chapter: selectedChapter,
+        photoPath: path,
+      });
       setCurrentCheckin(checkin);
+      setPhotoUrl(await getSignedPhotoUrl(path));
       setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
@@ -129,41 +137,34 @@ export default function TodayScreen() {
     }
   }
 
+  async function handleTakePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      showAlert('Camera access needed', 'A photo is how you check in — allow camera access to continue.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (result.canceled || !result.assets[0]) return;
+    await checkInWithPhoto(result.assets[0]);
+  }
+
+  async function handleChoosePhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showAlert('Photo access needed', 'A photo is how you check in — allow photo access to continue.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (result.canceled || !result.assets[0]) return;
+    await checkInWithPhoto(result.assets[0]);
+  }
+
   async function handleSaveReflection() {
     if (!currentCheckin) return;
     setSaving(true);
     try {
       const updated = await updateCheckin(currentCheckin.id, { reflection: reflectionDraft.trim() || null });
       setCurrentCheckin(updated);
-    } catch (error) {
-      showAlert('Something went wrong', getErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handlePickPhoto() {
-    if (!currentCheckin || !group || !session) return;
-
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showAlert('Photo access needed', 'Allow photo access to add a picture to your check-in.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets[0]) return;
-
-    const asset = result.assets[0];
-    setSaving(true);
-    try {
-      const path = await uploadCheckinPhoto(group.id, session.user.id, asset.uri, asset.mimeType ?? 'image/jpeg');
-      const updated = await updateCheckin(currentCheckin.id, { photoPath: path });
-      setCurrentCheckin(updated);
-      setPhotoUrl(await getSignedPhotoUrl(path));
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {
@@ -237,14 +238,32 @@ export default function TodayScreen() {
       )}
 
       {!loading && !currentCheckin && (
-        <Pressable style={styles.button} onPress={handleMarkAsRead} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? 'Saving…' : "I've read today's chapter"}</Text>
-        </Pressable>
+        <View style={styles.checkInSection}>
+          <Text style={styles.label}>
+            Add a photo — your Bible, your coffee, wherever you're reading — to check in.
+          </Text>
+          {Platform.OS !== 'web' && (
+            <Pressable style={styles.button} onPress={handleTakePhoto} disabled={saving}>
+              <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Take a photo to check in'}</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={Platform.OS !== 'web' ? styles.secondaryButton : styles.button}
+            onPress={handleChoosePhoto}
+            disabled={saving}
+          >
+            <Text style={Platform.OS !== 'web' ? styles.secondaryButtonText : styles.buttonText}>
+              {saving ? 'Saving…' : Platform.OS !== 'web' ? 'Choose from library' : 'Add a photo to check in'}
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       {!loading && currentCheckin && (
         <View style={styles.afterReadSection}>
           <Text style={styles.doneLabel}>You've checked in for this chapter.</Text>
+
+          {photoUrl && <Image source={{ uri: photoUrl }} style={styles.photo} />}
 
           <Text style={styles.label}>Reflection (optional)</Text>
           <TextInput
@@ -256,14 +275,6 @@ export default function TodayScreen() {
           />
           <Pressable style={styles.secondaryButton} onPress={handleSaveReflection} disabled={saving}>
             <Text style={styles.secondaryButtonText}>Post reflection</Text>
-          </Pressable>
-
-          <Text style={styles.label}>Photo (optional)</Text>
-          {photoUrl && <Image source={{ uri: photoUrl }} style={styles.photo} />}
-          <Pressable style={styles.secondaryButton} onPress={handlePickPhoto} disabled={saving}>
-            <Text style={styles.secondaryButtonText}>
-              {Platform.OS === 'web' ? 'Choose a photo' : 'Add a photo'}
-            </Text>
           </Pressable>
         </View>
       )}
@@ -355,6 +366,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.primaryText,
     fontWeight: 'bold',
+  },
+  checkInSection: {
+    gap: 8,
+    marginTop: 8,
   },
   afterReadSection: {
     gap: 8,

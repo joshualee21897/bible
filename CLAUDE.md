@@ -20,8 +20,8 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - **Backend:** **Supabase** (auth, Postgres database, storage for photos).
 
 ## Core rules of the app
-1. **Reading is the check-in.** Tapping "I've read today's chapter" counts as the check-in.
-2. **Reflection and photo are optional.** After reading, a person can add a short reflection, a photo (BeReal-style, like their Bible and coffee), both, or neither.
+1. **A photo is the check-in.** Adding a photo (BeReal-style, like their Bible and coffee) is how a person checks in — no photo, no check-in. (Changed from the original "reading alone counts" rule, by explicit request.)
+2. **Reflection is optional.** After checking in with a photo, a person can also add a short reflection.
 3. **One chapter a day.** The group picks a book and a start date. Day 1 = chapter 1, Day 2 = chapter 2, and so on.
 4. **Catch-up is allowed.** Anyone can read and check in on earlier chapters they missed.
 5. **A person can be in several groups.** A check-in belongs to one group. If someone is in two groups reading different books, they check in separately.
@@ -81,16 +81,16 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 - Use "resting" for inactive trees.
 - Nudges should be warm, e.g., "Your garden misses you" or "The lamb is waiting by your tree."
 - Speak in "we": "Our garden grew this week."
-- Use sentence case and plain words. Buttons say exactly what happens ("Mark as read," "Post reflection").
+- Use sentence case and plain words. Buttons say exactly what happens ("Take a photo to check in," "Post reflection").
 
 ## Screens
 1. **Sign in:** email magic link (simplest for testing). Add Google and Apple sign-in later, in Phase 3.
 2. **My groups:** a list of my groups, plus "Create group" (name, book, start date, weekly target) and "Join group" (6-character invite code).
 3. **Today (per group):** today's chapter in KJV, readable and scrollable. At the bottom:
-   - A "Mark as read" button.
-   - After tapping it, optional "Add a reflection" and "Add a photo" (camera or gallery via `expo-image-picker`, which also works on web).
+   - A photo is required to check in (camera or gallery via `expo-image-picker`, which also works on web).
+   - After checking in, optional "Add a reflection."
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
-4. **Group feed:** everyone's check-ins, newest first, showing name, chapter, reflection, and photo if any. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
+4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, reflection, and photo. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
 5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the drop balance, and a shop button.
 6. **Shop:** buy animals and items with group drops. Show the verse when bought.
 7. **Profile:** name and avatar color. Sign out.
@@ -143,7 +143,7 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 
 ### Phase 1 — Web MVP (goal: my friends can use it)
 - Expo project setup, Supabase connection, email sign-in.
-- Create/join group, Today screen with KJV and "Mark as read," optional reflection and photo, and the group feed.
+- Create/join group, Today screen with KJV and a required photo to check in, optional reflection, and the group feed.
 - A simple garden with each person's tree stage and the lamb.
 - Deploy to Vercel, with instructions for "Add to Home Screen" on iPhone and Android.
 

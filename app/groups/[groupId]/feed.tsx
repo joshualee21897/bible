@@ -1,23 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { Tree } from '../../../components/pixel/Tree';
 import { COLORS } from '../../../components/theme';
-import { getGroupFeed, getSignedPhotoUrl, type CheckinWithProfile } from '../../../lib/checkins';
+import {
+  getGroupFeed,
+  getGroupMembersWithCheckinCounts,
+  getSignedPhotoUrl,
+  type CheckinWithProfile,
+} from '../../../lib/checkins';
 import { getErrorMessage } from '../../../lib/error-message';
 import { useGroup } from '../../../lib/group-context';
+import { getTreeStage, getTreeStageLabel } from '../../../lib/tree';
 
 export default function GroupFeedScreen() {
   const { group } = useGroup();
   const [feed, setFeed] = useState<CheckinWithProfile[] | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!group) return;
     try {
-      const items = await getGroupFeed(group.id);
+      const [items, members] = await Promise.all([
+        getGroupFeed(group.id),
+        getGroupMembersWithCheckinCounts(group.id),
+      ]);
       setFeed(items);
+      setCheckinCounts(Object.fromEntries(members.map((member) => [member.user_id, member.checkin_count])));
       setErrorMessage(null);
 
       const withPhotos = items.filter((item) => item.photo_path);
@@ -65,21 +77,27 @@ export default function GroupFeedScreen() {
           />
         }
         ListEmptyComponent={<Text style={styles.empty}>No check-ins yet. Be the first to read today's chapter.</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.avatarDot, { backgroundColor: item.profiles?.avatar_color ?? COLORS.textMuted }]} />
-              <Text style={styles.name}>{item.profiles?.display_name ?? 'Someone'}</Text>
-              <Text style={styles.chapter}>
-                {item.book} {item.chapter}
-              </Text>
+        renderItem={({ item }) => {
+          const stage = getTreeStage(checkinCounts[item.user_id] ?? 0);
+          return (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Tree stage={stage} pixelSize={2} />
+                <View style={styles.nameColumn}>
+                  <Text style={styles.name}>{item.profiles?.display_name ?? 'Someone'}</Text>
+                  <Text style={styles.stageLabel}>{getTreeStageLabel(stage)}</Text>
+                </View>
+                <Text style={styles.chapter}>
+                  {item.book} {item.chapter}
+                </Text>
+              </View>
+              {item.reflection && <Text style={styles.reflection}>{item.reflection}</Text>}
+              {item.photo_path && photoUrls[item.id] && (
+                <Image source={{ uri: photoUrls[item.id] }} style={styles.photo} />
+              )}
             </View>
-            {item.reflection && <Text style={styles.reflection}>{item.reflection}</Text>}
-            {item.photo_path && photoUrls[item.id] && (
-              <Image source={{ uri: photoUrls[item.id] }} style={styles.photo} />
-            )}
-          </View>
-        )}
+          );
+        }}
       />
     </View>
   );
@@ -123,15 +141,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  avatarDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  nameColumn: {
+    flex: 1,
   },
   name: {
     fontWeight: 'bold',
-    flex: 1,
     color: COLORS.textPrimary,
+  },
+  stageLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
   },
   chapter: {
     color: COLORS.textMuted,
