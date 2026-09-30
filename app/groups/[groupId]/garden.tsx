@@ -7,13 +7,15 @@ import { Lamb } from '../../../components/pixel/Lamb';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
 import { Tree } from '../../../components/pixel/Tree';
 import { buttonBase, COLORS } from '../../../components/theme';
+import { confirmAction, showAlert } from '../../../lib/alert';
 import { getChapterCount } from '../../../lib/bible-books';
 import { useAuth } from '../../../lib/auth-context';
 import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyCheckedChapters, type MemberWithStats } from '../../../lib/checkins';
 import { getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
-import { getGardenItem } from '../../../lib/garden-items';
-import { useGroup } from '../../../lib/group-context';
 import { getErrorMessage } from '../../../lib/error-message';
+import { getGardenItem } from '../../../lib/garden-items';
+import { leaveGroup } from '../../../lib/groups';
+import { useGroup } from '../../../lib/group-context';
 import { getLambMood } from '../../../lib/lamb-mood';
 import { getTreeStage, getTreeStageLabel, isTreeResting } from '../../../lib/tree';
 import { getWeeklyGoalSummary, type WeeklyGoalSummary } from '../../../lib/weekly-goal';
@@ -60,6 +62,22 @@ export default function GroupGardenScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleLeaveGroup() {
+    if (!group) return;
+    const confirmed = await confirmAction(
+      `Leave ${group.name}? You'll need a new invite code to rejoin.`,
+      'Leave'
+    );
+    if (!confirmed) return;
+
+    try {
+      await leaveGroup(group.id);
+      router.replace('/');
+    } catch (error) {
+      showAlert('Something went wrong', getErrorMessage(error));
+    }
+  }
 
   if (!group) {
     return (
@@ -159,6 +177,10 @@ export default function GroupGardenScreen() {
           ))}
         </View>
       )}
+
+      <Pressable onPress={handleLeaveGroup}>
+        <Text style={styles.leaveLink}>Leave group</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -281,5 +303,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     textAlign: 'center',
+  },
+  leaveLink: {
+    color: COLORS.textMuted,
+    textDecorationLine: 'underline',
+    marginTop: 12,
   },
 });

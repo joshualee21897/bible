@@ -9,3 +9,17 @@ export function showAlert(title: string, message?: string) {
   }
   Alert.alert(title, message);
 }
+
+// Same problem as above, but for confirmations — window.confirm() on web,
+// a real two-button Alert on native.
+export function confirmAction(message: string, confirmLabel = 'OK'): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return Promise.resolve(window.confirm(message));
+  }
+  return new Promise((resolve) => {
+    Alert.alert('Are you sure?', message, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: confirmLabel, style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}

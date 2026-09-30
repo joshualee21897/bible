@@ -88,6 +88,14 @@ export async function joinGroupByCode(code: string): Promise<Group> {
   return data as Group;
 }
 
+export async function leaveGroup(groupId: string): Promise<void> {
+  const userId = await requireUserId();
+
+  const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId);
+
+  if (error) throw error;
+}
+
 export async function changeGroupBook(groupId: string, book: string, startDate: string): Promise<Group> {
   const { data, error } = await supabase
     .from('groups')
