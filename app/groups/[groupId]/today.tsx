@@ -2,7 +2,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   Pressable,
@@ -13,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import { showAlert } from '../../../lib/alert';
 import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
 import { getChapterVerses } from '../../../lib/bible';
 import { useAuth } from '../../../lib/auth-context';
@@ -121,7 +121,7 @@ export default function TodayScreen() {
       setCurrentCheckin(checkin);
       setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }
@@ -134,7 +134,7 @@ export default function TodayScreen() {
       const updated = await updateCheckin(currentCheckin.id, { reflection: reflectionDraft.trim() || null });
       setCurrentCheckin(updated);
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }
@@ -145,7 +145,7 @@ export default function TodayScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Allow photo access to add a picture to your check-in.');
+      showAlert('Photo access needed', 'Allow photo access to add a picture to your check-in.');
       return;
     }
 
@@ -163,7 +163,7 @@ export default function TodayScreen() {
       setCurrentCheckin(updated);
       setPhotoUrl(await getSignedPhotoUrl(path));
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }
@@ -176,7 +176,7 @@ export default function TodayScreen() {
       await changeGroupBook(group.id, nextBook, todayAsInputDate());
       refreshGroup();
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setChangingBook(false);
     }

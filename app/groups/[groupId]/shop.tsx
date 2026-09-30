@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
+import { showAlert } from '../../../lib/alert';
 import { useAuth } from '../../../lib/auth-context';
 import { buyGardenItem, getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
 import { GARDEN_ITEMS } from '../../../lib/garden-items';
@@ -31,7 +32,7 @@ export default function ShopScreen() {
   async function handleBuy(itemKey: string, price: number) {
     if (!group || !session || !drops) return;
     if (drops.balance < price) {
-      Alert.alert('Not enough drops', "Your group needs more drops to buy this. Keep reading to earn more!");
+      showAlert('Not enough drops', "Your group needs more drops to buy this. Keep reading to earn more!");
       return;
     }
 
@@ -40,7 +41,7 @@ export default function ShopScreen() {
       await buyGardenItem(group.id, session.user.id, itemKey);
       await load();
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setBuyingKey(null);
     }

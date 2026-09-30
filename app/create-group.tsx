@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
 import { createGroup } from '../lib/groups';
 
@@ -19,16 +20,16 @@ export default function CreateGroupScreen() {
   async function handleCreate() {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Add a group name', 'Give your group a name your friends will recognize.');
+      showAlert('Add a group name', 'Give your group a name your friends will recognize.');
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
-      Alert.alert('Check the start date', 'Enter the date as YYYY-MM-DD, e.g. 2026-10-01.');
+      showAlert('Check the start date', 'Enter the date as YYYY-MM-DD, e.g. 2026-10-01.');
       return;
     }
     const parsedTarget = Number.parseInt(weeklyTarget, 10);
     if (!Number.isFinite(parsedTarget) || parsedTarget < 1 || parsedTarget > 7) {
-      Alert.alert('Check the weekly goal', 'Enter a number from 1 to 7.');
+      showAlert('Check the weekly goal', 'Enter a number from 1 to 7.');
       return;
     }
 
@@ -42,7 +43,7 @@ export default function CreateGroupScreen() {
       });
       router.replace(`/groups/${group.id}`);
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }

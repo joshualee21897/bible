@@ -1,7 +1,8 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { showAlert } from '../lib/alert';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
 
@@ -28,14 +29,18 @@ export default function SignInScreen() {
     if (!trimmedEmail) return;
 
     setSending(true);
-    const { error } = await supabase.auth.signInWithOtp({ email: trimmedEmail });
-    setSending(false);
-
-    if (error) {
-      Alert.alert('Something went wrong', error.message);
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email: trimmedEmail });
+      if (error) {
+        showAlert('Something went wrong', error.message);
+        return;
+      }
+      setSent(true);
+    } catch (error) {
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+    } finally {
+      setSending(false);
     }
-    setSent(true);
   }
 
   if (sent) {

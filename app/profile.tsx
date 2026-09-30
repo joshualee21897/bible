@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AVATAR_COLORS } from '../components/pixel/palette';
+import { showAlert } from '../lib/alert';
 import { useAuth } from '../lib/auth-context';
 import { getMyProfile, updateMyProfile } from '../lib/profile';
 import { supabase } from '../lib/supabase';
@@ -27,7 +28,7 @@ export default function ProfileScreen() {
   async function handleSave() {
     const trimmed = displayName.trim();
     if (!trimmed) {
-      Alert.alert('Add your name', 'Your group will see this name on your check-ins.');
+      showAlert('Add your name', 'Your group will see this name on your check-ins.');
       return;
     }
 
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
       await updateMyProfile(trimmed, avatarColor);
       router.back();
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }

@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { showAlert } from '../lib/alert';
 import { joinGroupByCode } from '../lib/groups';
 
 export default function JoinGroupScreen() {
@@ -11,7 +12,7 @@ export default function JoinGroupScreen() {
   async function handleJoin() {
     const trimmed = code.trim();
     if (!trimmed) {
-      Alert.alert('Enter an invite code', 'Ask a group member for their 6-character code.');
+      showAlert('Enter an invite code', 'Ask a group member for their 6-character code.');
       return;
     }
 
@@ -20,7 +21,7 @@ export default function JoinGroupScreen() {
       const group = await joinGroupByCode(trimmed);
       router.replace(`/groups/${group.id}`);
     } catch (error) {
-      Alert.alert('Could not join', error instanceof Error ? error.message : String(error));
+      showAlert('Could not join', error instanceof Error ? error.message : String(error));
     } finally {
       setJoining(false);
     }

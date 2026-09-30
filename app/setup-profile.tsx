@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AVATAR_COLORS } from '../components/pixel/palette';
+import { showAlert } from '../lib/alert';
 import { createMyProfile } from '../lib/profile';
 
 export default function SetupProfileScreen() {
@@ -13,7 +14,7 @@ export default function SetupProfileScreen() {
   async function handleSave() {
     const trimmed = displayName.trim();
     if (!trimmed) {
-      Alert.alert('Add your name', 'Your group will see this name on your check-ins.');
+      showAlert('Add your name', 'Your group will see this name on your check-ins.');
       return;
     }
 
@@ -22,7 +23,7 @@ export default function SetupProfileScreen() {
       await createMyProfile(trimmed, avatarColor);
       router.replace('/');
     } catch (error) {
-      Alert.alert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }
