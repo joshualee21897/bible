@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 
 import { buttonBase, COLORS } from '../components/theme';
 import { useAuth } from '../lib/auth-context';
+import { getErrorMessage } from '../lib/error-message';
 import { listMyGroups, type MyGroup } from '../lib/groups';
 import { getMyProfile } from '../lib/profile';
 
@@ -26,7 +27,7 @@ export default function MyGroupsScreen() {
       setGroups(myGroups);
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setCheckingProfile(false);
       setRefreshing(false);

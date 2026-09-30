@@ -28,6 +28,7 @@ import {
   uploadCheckinPhoto,
   type Checkin,
 } from '../../../lib/checkins';
+import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
 
@@ -83,7 +84,7 @@ export default function TodayScreen() {
         }
         setErrorMessage(null);
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : String(error));
+        setErrorMessage(getErrorMessage(error));
       } finally {
         setLoading(false);
       }
@@ -122,7 +123,7 @@ export default function TodayScreen() {
       setCurrentCheckin(checkin);
       setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -135,7 +136,7 @@ export default function TodayScreen() {
       const updated = await updateCheckin(currentCheckin.id, { reflection: reflectionDraft.trim() || null });
       setCurrentCheckin(updated);
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -164,7 +165,7 @@ export default function TodayScreen() {
       setCurrentCheckin(updated);
       setPhotoUrl(await getSignedPhotoUrl(path));
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -177,7 +178,7 @@ export default function TodayScreen() {
       await changeGroupBook(group.id, nextBook, todayAsInputDate());
       refreshGroup();
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setChangingBook(false);
     }

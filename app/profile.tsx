@@ -6,6 +6,7 @@ import { AVATAR_COLORS } from '../components/pixel/palette';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { useAuth } from '../lib/auth-context';
+import { getErrorMessage } from '../lib/error-message';
 import { getMyProfile, updateMyProfile } from '../lib/profile';
 import { supabase } from '../lib/supabase';
 
@@ -38,7 +39,7 @@ export default function ProfileScreen() {
       await updateMyProfile(trimmed, avatarColor);
       router.back();
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }

@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AVATAR_COLORS } from '../components/pixel/palette';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
+import { getErrorMessage } from '../lib/error-message';
 import { createMyProfile } from '../lib/profile';
 
 export default function SetupProfileScreen() {
@@ -24,7 +25,7 @@ export default function SetupProfileScreen() {
       await createMyProfile(trimmed, avatarColor);
       router.replace('/');
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }

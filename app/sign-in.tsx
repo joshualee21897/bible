@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 
 import { showAlert } from '../lib/alert';
 import { useAuth } from '../lib/auth-context';
+import { getErrorMessage } from '../lib/error-message';
 import { supabase } from '../lib/supabase';
 import { buttonBase, COLORS } from '../components/theme';
 
@@ -38,7 +39,7 @@ export default function SignInScreen() {
       }
       setSent(true);
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSending(false);
     }

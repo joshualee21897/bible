@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
+import { getErrorMessage } from '../lib/error-message';
 import { joinGroupByCode } from '../lib/groups';
 
 export default function JoinGroupScreen() {
@@ -22,7 +23,7 @@ export default function JoinGroupScreen() {
       const group = await joinGroupByCode(trimmed);
       router.replace(`/groups/${group.id}`);
     } catch (error) {
-      showAlert('Could not join', error instanceof Error ? error.message : String(error));
+      showAlert('Could not join', getErrorMessage(error));
     } finally {
       setJoining(false);
     }

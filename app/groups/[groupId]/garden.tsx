@@ -13,6 +13,7 @@ import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyChecked
 import { getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
 import { getGardenItem } from '../../../lib/garden-items';
 import { useGroup } from '../../../lib/group-context';
+import { getErrorMessage } from '../../../lib/error-message';
 import { getLambMood } from '../../../lib/lamb-mood';
 import { getTreeStage, getTreeStageLabel, isTreeResting } from '../../../lib/tree';
 import { getWeeklyGoalSummary, type WeeklyGoalSummary } from '../../../lib/weekly-goal';
@@ -50,7 +51,7 @@ export default function GroupGardenScreen() {
       setHasCheckedInToday(checkedChapters.has(todayChapter));
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setRefreshing(false);
     }

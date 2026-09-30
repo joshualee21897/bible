@@ -6,6 +6,7 @@ import { buttonBase, COLORS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { useAuth } from '../../../lib/auth-context';
 import { buyGardenItem, getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
+import { getErrorMessage } from '../../../lib/error-message';
 import { GARDEN_ITEMS } from '../../../lib/garden-items';
 import { useGroup } from '../../../lib/group-context';
 
@@ -27,7 +28,7 @@ export default function ShopScreen() {
       setOwned(ownedKeys);
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ export default function ShopScreen() {
       await buyGardenItem(group.id, session.user.id, itemKey);
       await load();
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setBuyingKey(null);
     }

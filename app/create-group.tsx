@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
+import { getErrorMessage } from '../lib/error-message';
 import { createGroup } from '../lib/groups';
 
 function todayAsInputDate(): string {
@@ -44,7 +45,7 @@ export default function CreateGroupScreen() {
       });
       router.replace(`/groups/${group.id}`);
     } catch (error) {
-      showAlert('Something went wrong', error instanceof Error ? error.message : String(error));
+      showAlert('Something went wrong', getErrorMessage(error));
     } finally {
       setSaving(false);
     }

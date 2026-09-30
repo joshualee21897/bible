@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Image, RefreshControl, StyleSheet, Text, V
 
 import { COLORS } from '../../../components/theme';
 import { getGroupFeed, getSignedPhotoUrl, type CheckinWithProfile } from '../../../lib/checkins';
+import { getErrorMessage } from '../../../lib/error-message';
 import { useGroup } from '../../../lib/group-context';
 
 export default function GroupFeedScreen() {
@@ -29,7 +30,7 @@ export default function GroupFeedScreen() {
       }
       setPhotoUrls(urlMap);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setRefreshing(false);
     }
