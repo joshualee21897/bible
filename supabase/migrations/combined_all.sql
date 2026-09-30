@@ -278,6 +278,89 @@ alter table group_items drop constraint if exists group_items_bought_by_profiles
 alter table group_items
   add constraint group_items_bought_by_profiles_fkey foreign key (bought_by) references profiles (id);
 
+-- Fix infinite recursion in the membership-check policies ------------------
+-- (several policies checked group_members from within a query against
+-- group_members itself, which has its own policy doing the same check —
+-- an endless loop. This SECURITY DEFINER function bypasses RLS for its own
+-- internal lookup, breaking the cycle.)
+
+create or replace function is_group_member(p_group_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from group_members
+    where group_id = p_group_id and user_id = auth.uid()
+  );
+$$;
+
+grant execute on function is_group_member(uuid) to authenticated;
+
+drop policy if exists "Members can view their groups" on groups;
+create policy "Members can view their groups"
+  on groups for select
+  to authenticated
+  using (is_group_member(id));
+
+drop policy if exists "Members can update their groups" on groups;
+create policy "Members can update their groups"
+  on groups for update
+  to authenticated
+  using (is_group_member(id))
+  with check (is_group_member(id));
+
+drop policy if exists "Members can view their group's membership" on group_members;
+create policy "Members can view their group's membership"
+  on group_members for select
+  to authenticated
+  using (is_group_member(group_id));
+
+drop policy if exists "Members can view their group's check-ins" on checkins;
+create policy "Members can view their group's check-ins"
+  on checkins for select
+  to authenticated
+  using (is_group_member(group_id));
+
+drop policy if exists "Users can create their own check-ins" on checkins;
+create policy "Users can create their own check-ins"
+  on checkins for insert
+  to authenticated
+  with check (user_id = auth.uid() and is_group_member(group_id));
+
+drop policy if exists "Members can view their group's items" on group_items;
+create policy "Members can view their group's items"
+  on group_items for select
+  to authenticated
+  using (is_group_member(group_id));
+
+drop policy if exists "Members can add items to their group" on group_items;
+create policy "Members can add items to their group"
+  on group_items for insert
+  to authenticated
+  with check (bought_by = auth.uid() and is_group_member(group_id));
+
+drop policy if exists "Members can view their group's check-in photos" on storage.objects;
+create policy "Members can view their group's check-in photos"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'checkin-photos'
+    and is_group_member(((storage.foldername(name))[1])::uuid)
+  );
+
+drop policy if exists "Members can upload their own check-in photos" on storage.objects;
+create policy "Members can upload their own check-in photos"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'checkin-photos'
+    and (storage.foldername(name))[2] = auth.uid()::text
+    and is_group_member(((storage.foldername(name))[1])::uuid)
+  );
+
 -- Make sure Supabase's API layer picks up all of the above immediately ------
 
 notify pgrst, 'reload schema';
