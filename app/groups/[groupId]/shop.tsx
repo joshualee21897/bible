@@ -17,13 +17,20 @@ export default function ShopScreen() {
   const [owned, setOwned] = useState<Set<string>>(new Set());
   const [buyingKey, setBuyingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!group) return;
-    const [summary, ownedKeys] = await Promise.all([getDropsSummary(group.id), getOwnedItemKeys(group.id)]);
-    setDrops(summary);
-    setOwned(ownedKeys);
-    setLoading(false);
+    try {
+      const [summary, ownedKeys] = await Promise.all([getDropsSummary(group.id), getOwnedItemKeys(group.id)]);
+      setDrops(summary);
+      setOwned(ownedKeys);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoading(false);
+    }
   }, [group]);
 
   useEffect(() => {
@@ -48,7 +55,26 @@ export default function ShopScreen() {
     }
   }
 
-  if (!group || loading || !drops) {
+  if (!group || (loading && !errorMessage)) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (errorMessage && !drops) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{errorMessage}</Text>
+        <Pressable style={styles.buyButton} onPress={load}>
+          <Text style={styles.buyButtonText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (!drops) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -104,6 +130,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  error: {
+    color: COLORS.error,
+    textAlign: 'center',
   },
   balance: {
     fontSize: 20,

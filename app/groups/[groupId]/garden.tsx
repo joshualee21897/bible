@@ -60,7 +60,26 @@ export default function GroupGardenScreen() {
     load();
   }, [load]);
 
-  if (!group || members === null || !drops || !weeklyGoal) {
+  if (!group) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (errorMessage && (members === null || !drops || !weeklyGoal)) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{errorMessage}</Text>
+        <Pressable style={styles.retryButton} onPress={load}>
+          <Text style={styles.retryButtonText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (members === null || !drops || !weeklyGoal) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -156,9 +175,22 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gardenBackground,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
+    padding: 24,
   },
   error: {
     color: COLORS.error,
+    textAlign: 'center',
+  },
+  retryButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  retryButtonText: {
+    color: COLORS.primaryText,
+    fontWeight: 'bold',
   },
   topRow: {
     flexDirection: 'row',

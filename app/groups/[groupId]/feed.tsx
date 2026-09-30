@@ -39,7 +39,7 @@ export default function GroupFeedScreen() {
     load();
   }, [load]);
 
-  if (!group || feed === null) {
+  if (!group || (feed === null && !errorMessage)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -51,7 +51,7 @@ export default function GroupFeedScreen() {
     <View style={styles.container}>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
       <FlatList
-        data={feed}
+        data={feed ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={

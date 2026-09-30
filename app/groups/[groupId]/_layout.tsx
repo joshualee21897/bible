@@ -1,16 +1,38 @@
 import { Tabs, router, useLocalSearchParams } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { COLORS } from '../../../components/theme';
+import { buttonBase, COLORS } from '../../../components/theme';
 import { GroupProvider, useGroup } from '../../../lib/group-context';
 
 function GroupTabs() {
-  const { group } = useGroup();
+  const { group, loading, error, refresh } = useGroup();
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error || !group) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error ?? 'Could not load this group.'}</Text>
+        <Pressable style={styles.retryButton} onPress={refresh}>
+          <Text style={styles.retryButtonText}>Try again</Text>
+        </Pressable>
+        <Pressable onPress={() => router.replace('/')}>
+          <Text style={styles.backLink}>Back to My Groups</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
-        headerTitle: group?.name ?? 'Group',
+        headerTitle: group.name,
         headerStyle: { backgroundColor: COLORS.surface },
         headerTintColor: COLORS.textPrimary,
         headerLeft: () => (
@@ -41,3 +63,32 @@ export default function GroupLayout() {
     </GroupProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  error: {
+    color: COLORS.error,
+    textAlign: 'center',
+  },
+  retryButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  retryButtonText: {
+    color: COLORS.primaryText,
+    fontWeight: 'bold',
+  },
+  backLink: {
+    color: COLORS.accentText,
+    fontWeight: '600',
+  },
+});
