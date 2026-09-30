@@ -12,6 +12,8 @@
 --
 -- Run this after the earlier migrations.
 
+drop function if exists is_group_member(uuid) cascade;
+
 create or replace function is_group_member(p_group_id uuid)
 returns boolean
 language sql

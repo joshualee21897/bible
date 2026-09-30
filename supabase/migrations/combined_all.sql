@@ -284,6 +284,8 @@ alter table group_items
 -- an endless loop. This SECURITY DEFINER function bypasses RLS for its own
 -- internal lookup, breaking the cycle.)
 
+drop function if exists is_group_member(uuid) cascade;
+
 create or replace function is_group_member(p_group_id uuid)
 returns boolean
 language sql
