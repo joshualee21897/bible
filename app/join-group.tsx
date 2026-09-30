@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { joinGroupByCode } from '../lib/groups';
 
@@ -49,7 +50,7 @@ export default function JoinGroupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
@@ -58,13 +59,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   body: {
     textAlign: 'center',
+    color: COLORS.textPrimary,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
     width: '100%',
@@ -72,15 +75,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     letterSpacing: 4,
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
   },
   button: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
 });

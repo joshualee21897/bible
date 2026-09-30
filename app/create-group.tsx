@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
 import { createGroup } from '../lib/groups';
@@ -50,7 +51,7 @@ export default function CreateGroupScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create a group</Text>
 
       <Text style={styles.label}>Group name</Text>
@@ -89,56 +90,64 @@ export default function CreateGroupScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    backgroundColor: COLORS.background,
+  },
   container: {
     padding: 24,
-    paddingTop: 60,
+    paddingBottom: 60,
     gap: 6,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 12,
+    color: COLORS.textPrimary,
   },
   label: {
     fontWeight: '600',
     marginTop: 12,
+    color: COLORS.textPrimary,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
   },
   bookPicker: {
     flexDirection: 'row',
   },
   bookChip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginRight: 8,
+    backgroundColor: COLORS.surface,
   },
   bookChipSelected: {
-    backgroundColor: '#111',
-    borderColor: '#111',
+    backgroundColor: COLORS.accent,
   },
   bookChipText: {
-    color: '#111',
+    color: COLORS.textPrimary,
   },
   bookChipTextSelected: {
-    color: '#fff',
+    color: COLORS.accentText,
+    fontWeight: 'bold',
   },
   button: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 24,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
 });

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AVATAR_COLORS } from '../components/pixel/palette';
+import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { useAuth } from '../lib/auth-context';
 import { getMyProfile, updateMyProfile } from '../lib/profile';
@@ -89,34 +90,38 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     padding: 24,
     paddingTop: 60,
     gap: 6,
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   email: {
-    color: '#666',
+    color: COLORS.textMuted,
     marginBottom: 12,
   },
   label: {
     fontWeight: '600',
     marginTop: 12,
+    color: COLORS.textPrimary,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
   },
   swatchRow: {
     flexDirection: 'row',
@@ -130,22 +135,22 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   swatchSelected: {
-    borderColor: '#000',
+    borderColor: COLORS.border,
   },
   button: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 24,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
   signOut: {
     marginTop: 20,
-    color: '#666',
+    color: COLORS.textMuted,
     textDecorationLine: 'underline',
     textAlign: 'center',
   },

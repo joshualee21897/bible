@@ -1,40 +1,42 @@
+// A soft pastel garden palette. Outlines stay black (the 8-bit look), but
+// every fill color is a gentle pastel instead of a saturated, earthy tone.
 export const PALETTE = {
   outline: '#000000',
-  woolLight: '#F7F3E8',
-  woolShade: '#D9D2C0',
-  grassLight: '#6DAA45',
-  grassDark: '#4E8A32',
-  bark: '#7A4E2D',
-  leavesLight: '#77C063',
-  leavesDark: '#3F8F4A',
-  fruit: '#C8403A',
-  waterLight: '#8EC5F0',
-  waterDark: '#5B9BD5',
-  sky: '#FFFFFF',
+  woolLight: '#FBF6EF',
+  woolShade: '#EBDFD0',
+  grassLight: '#B9E4C0',
+  grassDark: '#8FCC9D',
+  bark: '#D8A98B',
+  leavesLight: '#BFE8C4',
+  leavesDark: '#93CE9E',
+  fruit: '#F3A6A6',
+  waterLight: '#BEE3F5',
+  waterDark: '#8FC7E8',
+  sky: '#FFF8F0',
+  lavender: '#D3C2E8',
 
-  // Extra tones for shop animals and decorations, kept in the same
-  // muted, earthy family as the base palette above.
-  birdLight: '#C9C2B4',
-  birdDark: '#8B8272',
-  ravenDark: '#3A3530',
-  goldLight: '#E3B96A',
-  goldDark: '#B9832E',
-  stoneLight: '#C9C4B8',
-  stoneDark: '#9B968A',
+  // Extra tones for shop animals and decorations.
+  birdLight: '#EAD9C9',
+  birdDark: '#C9AE96',
+  ravenDark: '#6E6259',
+  goldLight: '#F6D9A0',
+  goldDark: '#E0B770',
+  stoneLight: '#E5DED2',
+  stoneDark: '#CBC0AE',
 
   // Softer, sleepier tones for a resting tree — never a "dead" look, just quieter.
-  grassRestingLight: '#A9C79A',
-  grassRestingDark: '#8FAE80',
-  leavesRestingLight: '#A9CBAE',
-  leavesRestingDark: '#82AE8A',
-  barkResting: '#A38868',
+  grassRestingLight: '#D8ECDA',
+  grassRestingDark: '#C3DFC7',
+  leavesRestingLight: '#D6EAD8',
+  leavesRestingDark: '#BFDDC3',
+  barkResting: '#E5CFC0',
 } as const;
 
 export const AVATAR_COLORS = [
   PALETTE.grassDark,
   PALETTE.bark,
-  PALETTE.leavesDark,
-  PALETTE.fruit,
   PALETTE.waterDark,
-  '#B98A2E',
+  PALETTE.fruit,
+  PALETTE.lavender,
+  PALETTE.goldDark,
 ] as const;

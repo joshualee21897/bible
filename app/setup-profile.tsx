@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AVATAR_COLORS } from '../components/pixel/palette';
+import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { createMyProfile } from '../lib/profile';
 
@@ -54,7 +55,7 @@ export default function SetupProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
@@ -63,21 +64,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   body: {
     textAlign: 'center',
+    color: COLORS.textPrimary,
   },
   label: {
     marginTop: 8,
     fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
     width: '100%',
     maxWidth: 320,
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
   },
   swatchRow: {
     flexDirection: 'row',
@@ -91,17 +97,17 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   swatchSelected: {
-    borderColor: '#000',
+    borderColor: COLORS.border,
   },
   button: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
     marginTop: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
 });

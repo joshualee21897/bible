@@ -2,6 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { buttonBase, COLORS } from '../components/theme';
 import { useAuth } from '../lib/auth-context';
 import { listMyGroups, type MyGroup } from '../lib/groups';
 import { getMyProfile } from '../lib/profile';
@@ -102,13 +103,13 @@ export default function MyGroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     paddingTop: 60,
     paddingHorizontal: 16,
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -121,13 +122,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   link: {
-    color: '#5B9BD5',
+    color: COLORS.accentText,
     fontWeight: '600',
   },
   error: {
-    color: '#C8403A',
+    color: COLORS.error,
     marginBottom: 8,
   },
   list: {
@@ -137,22 +139,23 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
-    color: '#666',
+    color: COLORS.textMuted,
     marginTop: 40,
   },
   groupCard: {
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: COLORS.border,
     borderRadius: 10,
     padding: 14,
-    backgroundColor: '#F7F3E8',
+    backgroundColor: COLORS.surface,
   },
   groupName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   groupBook: {
-    color: '#555',
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   actions: {
@@ -161,22 +164,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   button: {
+    ...buttonBase,
     flex: 1,
-    backgroundColor: '#111',
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
-    borderRadius: 8,
     alignItems: 'center',
   },
   buttonSecondary: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#111',
+    backgroundColor: COLORS.surfaceAccent,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
   buttonTextSecondary: {
-    color: '#111',
+    color: COLORS.accentText,
   },
 });

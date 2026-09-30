@@ -6,6 +6,7 @@ import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
 import { Tree } from '../../../components/pixel/Tree';
+import { buttonBase, COLORS } from '../../../components/theme';
 import { getChapterCount } from '../../../lib/bible-books';
 import { useAuth } from '../../../lib/auth-context';
 import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyCheckedChapters, type MemberWithStats } from '../../../lib/checkins';
@@ -146,18 +147,18 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     alignItems: 'center',
-    backgroundColor: '#DFF0FF',
+    backgroundColor: COLORS.gardenBackground,
     flexGrow: 1,
     gap: 14,
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.gardenBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
   error: {
-    color: '#C8403A',
+    color: COLORS.error,
   },
   topRow: {
     flexDirection: 'row',
@@ -168,15 +169,16 @@ const styles = StyleSheet.create({
   balance: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   shopButton: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.accent,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
   },
   shopButtonText: {
-    color: '#fff',
+    color: COLORS.accentText,
     fontWeight: 'bold',
   },
   goalCard: {
@@ -185,12 +187,13 @@ const styles = StyleSheet.create({
   },
   goalLabel: {
     fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   harvestCard: {
     width: '100%',
-    backgroundColor: '#F7F3E8',
+    backgroundColor: COLORS.surface,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: COLORS.border,
     borderRadius: 10,
     padding: 12,
     gap: 4,
@@ -198,16 +201,17 @@ const styles = StyleSheet.create({
   harvestTitle: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: COLORS.textPrimary,
   },
   harvestBody: {
-    color: '#444',
+    color: COLORS.textMuted,
   },
   lambRow: {
     alignItems: 'center',
     gap: 4,
   },
   lambCaption: {
-    color: '#444',
+    color: COLORS.textMuted,
   },
   grove: {
     flexDirection: 'row',
@@ -222,9 +226,10 @@ const styles = StyleSheet.create({
   memberName: {
     marginTop: 6,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   stageLabel: {
-    color: '#555',
+    color: COLORS.textMuted,
     fontSize: 12,
   },
   itemsRow: {
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
   itemName: {
     marginTop: 4,
     fontSize: 12,
-    color: '#444',
+    color: COLORS.textMuted,
     textAlign: 'center',
   },
 });

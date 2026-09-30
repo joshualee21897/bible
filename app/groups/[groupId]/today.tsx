@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import { buttonBase, COLORS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
 import { getChapterVerses } from '../../../lib/bible';
@@ -192,7 +193,7 @@ export default function TodayScreen() {
 
   if (finished) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.reference}>You've finished {group.book}!</Text>
         <Text style={styles.label}>Our garden is proud of how far we've come. Pick the next book to keep reading.</Text>
         <ScrollView horizontal style={styles.bookPicker} showsHorizontalScrollIndicator={false}>
@@ -214,7 +215,7 @@ export default function TodayScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       <Text style={styles.reference}>
@@ -295,6 +296,9 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    backgroundColor: COLORS.background,
+  },
   container: {
     padding: 16,
     paddingBottom: 40,
@@ -302,16 +306,17 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   error: {
-    color: '#C8403A',
+    color: COLORS.error,
   },
   reference: {
     fontSize: 22,
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   versesLoading: {
     marginVertical: 24,
@@ -322,26 +327,32 @@ const styles = StyleSheet.create({
   },
   verses: {
     gap: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 14,
   },
   verseText: {
     fontSize: 17,
     lineHeight: 26,
     fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' }),
+    color: COLORS.textPrimary,
   },
   verseNumber: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: COLORS.textMuted,
   },
   button: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
   afterReadSection: {
@@ -350,29 +361,33 @@ const styles = StyleSheet.create({
   },
   doneLabel: {
     fontWeight: '600',
-    color: '#4E8A32',
+    color: COLORS.success,
   },
   label: {
     fontWeight: '600',
     marginTop: 8,
+    color: COLORS.textPrimary,
   },
   reflectionInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
     minHeight: 60,
     textAlignVertical: 'top',
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
   },
   secondaryButton: {
     borderWidth: 2,
-    borderColor: '#111',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surfaceAccent,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#111',
+    color: COLORS.accentText,
     fontWeight: 'bold',
   },
   photo: {
@@ -389,20 +404,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: COLORS.border,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
+    backgroundColor: COLORS.surface,
   },
   chipSelected: {
-    backgroundColor: '#111',
-    borderColor: '#111',
+    backgroundColor: COLORS.accent,
   },
   chipText: {
-    color: '#111',
+    color: COLORS.textPrimary,
   },
   chipTextSelected: {
-    color: '#fff',
+    color: COLORS.accentText,
+    fontWeight: 'bold',
   },
 });

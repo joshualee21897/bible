@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
+import { buttonBase, COLORS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { useAuth } from '../../../lib/auth-context';
 import { buyGardenItem, getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
@@ -95,12 +96,12 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     padding: 16,
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,6 +109,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
+    color: COLORS.textPrimary,
   },
   list: {
     gap: 10,
@@ -118,9 +120,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: COLORS.border,
     borderRadius: 10,
     padding: 10,
+    backgroundColor: COLORS.surface,
   },
   cardInfo: {
     flex: 1,
@@ -128,30 +131,32 @@ const styles = StyleSheet.create({
   itemName: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: COLORS.textPrimary,
   },
   verse: {
-    color: '#4E8A32',
+    color: COLORS.success,
     marginTop: 2,
   },
   price: {
-    color: '#666',
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   ownedLabel: {
-    color: '#4E8A32',
+    color: COLORS.success,
     fontWeight: '600',
   },
   buyButton: {
-    backgroundColor: '#111',
+    ...buttonBase,
+    backgroundColor: COLORS.primary,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
   },
   buyButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: COLORS.surfaceAccent,
+    opacity: 0.6,
   },
   buyButtonText: {
-    color: '#fff',
+    color: COLORS.primaryText,
     fontWeight: 'bold',
   },
 });

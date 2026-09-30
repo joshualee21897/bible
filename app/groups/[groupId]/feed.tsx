@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { COLORS } from '../../../components/theme';
 import { getGroupFeed, getSignedPhotoUrl, type CheckinWithProfile } from '../../../lib/checkins';
 import { useGroup } from '../../../lib/group-context';
 
@@ -66,7 +67,7 @@ export default function GroupFeedScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <View style={[styles.avatarDot, { backgroundColor: item.profiles?.avatar_color ?? '#999' }]} />
+              <View style={[styles.avatarDot, { backgroundColor: item.profiles?.avatar_color ?? COLORS.textMuted }]} />
               <Text style={styles.name}>{item.profiles?.display_name ?? 'Someone'}</Text>
               <Text style={styles.chapter}>
                 {item.book} {item.chapter}
@@ -86,17 +87,17 @@ export default function GroupFeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     padding: 16,
   },
   center: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   error: {
-    color: '#C8403A',
+    color: COLORS.error,
     marginBottom: 8,
   },
   list: {
@@ -105,15 +106,16 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
-    color: '#666',
+    color: COLORS.textMuted,
     marginTop: 40,
   },
   card: {
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: COLORS.border,
     borderRadius: 10,
     padding: 12,
     gap: 8,
+    backgroundColor: COLORS.surface,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -128,12 +130,14 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: 'bold',
     flex: 1,
+    color: COLORS.textPrimary,
   },
   chapter: {
-    color: '#555',
+    color: COLORS.textMuted,
   },
   reflection: {
     fontSize: 15,
+    color: COLORS.textPrimary,
   },
   photo: {
     width: '100%',

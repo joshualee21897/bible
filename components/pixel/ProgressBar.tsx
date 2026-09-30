@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { COLORS } from '../theme';
 import { PALETTE } from './palette';
 
 type Props = {
@@ -38,6 +39,6 @@ const styles = StyleSheet.create({
     backgroundColor: PALETTE.leavesDark,
   },
   empty: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
   },
 });

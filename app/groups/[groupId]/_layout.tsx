@@ -1,6 +1,7 @@
 import { Tabs, router, useLocalSearchParams } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
+import { COLORS } from '../../../components/theme';
 import { GroupProvider, useGroup } from '../../../lib/group-context';
 
 function GroupTabs() {
@@ -10,11 +11,16 @@ function GroupTabs() {
     <Tabs
       screenOptions={{
         headerTitle: group?.name ?? 'Group',
+        headerStyle: { backgroundColor: COLORS.surface },
+        headerTintColor: COLORS.textPrimary,
         headerLeft: () => (
           <Pressable onPress={() => router.replace('/')} hitSlop={8} style={{ paddingHorizontal: 12 }}>
-            <Text style={{ color: '#5B9BD5', fontWeight: '600' }}>Groups</Text>
+            <Text style={{ color: COLORS.accentText, fontWeight: '600' }}>Groups</Text>
           </Pressable>
         ),
+        tabBarStyle: { backgroundColor: COLORS.surface },
+        tabBarActiveTintColor: COLORS.accentText,
+        tabBarInactiveTintColor: COLORS.textMuted,
       }}
     >
       <Tabs.Screen name="index" options={{ href: null }} />
