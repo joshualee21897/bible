@@ -2,29 +2,45 @@
 // removed once the new style is reviewed.
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { PreviewPixelGrid } from '../components/pixel/preview/PreviewPixelGrid';
-import { buildIsoGroundTile } from '../components/pixel/preview/iso-ground-tile';
-import { buildReferenceLamb } from '../components/pixel/preview/lamb-reference';
+import { PixelGrid } from '../components/pixel/PixelGrid';
+import { buildTreeGrid } from '../components/pixel/tree-sprites';
+import { Lamb } from '../components/pixel/Lamb';
+import type { TreeStage } from '../lib/tree';
+
+const STAGES: TreeStage[] = ['seed', 'sprout', 'sapling', 'tree', 'fruiting'];
 
 export default function ArtPreview() {
-  const tile = buildIsoGroundTile();
-  const refLamb = buildReferenceLamb();
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>New art direction — v3 (exact reference port)</Text>
+      <Text style={styles.title}>Tree stages — new flat style</Text>
 
-      <Text style={styles.caption}>Reference sheep, ported pixel-for-pixel</Text>
-      <PreviewPixelGrid grid={refLamb} pixelSize={10} />
+      <View style={styles.row}>
+        {STAGES.map((stage) => (
+          <View key={stage} style={styles.item}>
+            <PixelGrid grid={buildTreeGrid(stage)} pixelSize={4} />
+            <Text style={styles.label}>{stage}</Text>
+          </View>
+        ))}
+      </View>
 
-      <Text style={styles.caption}>On the ground tile</Text>
-      <View style={styles.stage}>
-        <View style={styles.tileLayer}>
-          <PreviewPixelGrid grid={tile} pixelSize={7} />
-        </View>
-        <View style={styles.lambLayer}>
-          <PreviewPixelGrid grid={refLamb} pixelSize={6} />
-        </View>
+      <Text style={styles.title}>Resting variants</Text>
+      <View style={styles.row}>
+        {STAGES.map((stage) => (
+          <View key={stage} style={styles.item}>
+            <PixelGrid grid={buildTreeGrid(stage, true)} pixelSize={4} />
+            <Text style={styles.label}>{stage}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.title}>Lamb moods</Text>
+      <View style={styles.row}>
+        {(['happy', 'waving', 'pointing', 'sleeping'] as const).map((mood) => (
+          <View key={mood} style={styles.item}>
+            <Lamb mood={mood} pixelSize={5} />
+            <Text style={styles.label}>{mood}</Text>
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -34,30 +50,26 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
     backgroundColor: '#FFFFFF',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-  },
-  stage: {
-    width: 36 * 7,
-    height: 36 * 7,
-  },
-  tileLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  lambLayer: {
-    position: 'absolute',
-    top: 7 * 10,
-    left: 7 * 8,
-  },
-  caption: {
     marginTop: 12,
-    fontSize: 13,
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  item: {
+    alignItems: 'center',
+  },
+  label: {
+    marginTop: 4,
+    fontSize: 12,
     color: '#666',
   },
 });
