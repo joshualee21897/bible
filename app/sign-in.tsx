@@ -35,7 +35,7 @@ export default function SignInScreen() {
   }
 
   if (session) {
-    return <Redirect href="/" />;
+    return <Redirect href="/today" />;
   }
 
   async function handleSendLink() {

@@ -10,7 +10,7 @@ export type WeeklyGoalSummary = {
 
 const HARVEST_THRESHOLD_PERCENT = 80;
 
-function startOfWeek(date: Date): Date {
+export function startOfWeek(date: Date): Date {
   const day = date.getDay(); // 0 (Sun) .. 6 (Sat)
   const diffToMonday = (day + 6) % 7;
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() - diffToMonday);

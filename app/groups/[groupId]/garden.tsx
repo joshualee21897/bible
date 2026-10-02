@@ -73,7 +73,7 @@ export default function GroupGardenScreen() {
 
     try {
       await leaveGroup(group.id);
-      router.replace('/');
+      router.replace('/groups');
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     }

@@ -1,36 +1,57 @@
 import { Tabs, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { buttonBase, COLORS, FONTS } from '../../../components/theme';
+import { COLORS, FONTS, HARD_SHADOW, buttonBase } from '../../../components/theme';
 import { GroupProvider, useGroup } from '../../../lib/group-context';
 
-function TabIcon({ glyph, tint, focused }: { glyph: string; tint: string; focused: boolean }) {
+const SEGMENTS = [
+  { name: 'bible', label: 'Bible' },
+  { name: 'feed', label: 'Feed' },
+  { name: 'garden', label: 'Garden' },
+];
+
+function goBack() {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/groups');
+  }
+}
+
+function GroupHeader({ title, routeName }: { title: string; routeName: string }) {
+  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const showSegments = SEGMENTS.some((segment) => segment.name === routeName);
+
   return (
-    <View style={[tabIconStyles.box, { backgroundColor: tint }, focused && tabIconStyles.boxFocused]}>
-      <Text style={tabIconStyles.glyph}>{glyph}</Text>
+    <View style={styles.headerWrap}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={goBack} hitSlop={10} style={styles.backButton}>
+          <Text style={styles.backGlyph}>‹</Text>
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <View style={styles.backButton} />
+      </View>
+      {showSegments && (
+        <View style={styles.segmentRow}>
+          {SEGMENTS.map((segment) => {
+            const isActive = segment.name === routeName;
+            return (
+              <Pressable
+                key={segment.name}
+                style={[styles.segment, isActive && styles.segmentActive]}
+                onPress={() => router.replace(`/groups/${groupId}/${segment.name}` as never)}
+              >
+                <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>{segment.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
-
-const tabIconStyles = StyleSheet.create({
-  box: {
-    width: 34,
-    height: 30,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxFocused: {
-    borderColor: COLORS.border,
-  },
-  glyph: {
-    fontFamily: FONTS.headingSemiBold,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-  },
-});
 
 function GroupTabs() {
   const { group, loading, error, refresh } = useGroup();
@@ -50,7 +71,7 @@ function GroupTabs() {
         <Pressable style={styles.retryButton} onPress={refresh}>
           <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
-        <Pressable onPress={() => router.replace('/')}>
+        <Pressable onPress={() => router.replace('/groups')}>
           <Text style={styles.backLink}>Back to My Groups</Text>
         </Pressable>
       </View>
@@ -59,45 +80,16 @@ function GroupTabs() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerTitle: group.name,
-        headerTitleStyle: { fontFamily: FONTS.headingSemiBold },
-        headerStyle: { backgroundColor: COLORS.cream },
-        headerTintColor: COLORS.textPrimary,
-        headerLeft: () => (
-          <Pressable onPress={() => router.replace('/')} hitSlop={8} style={{ paddingHorizontal: 12 }}>
-            <Text style={{ color: COLORS.textPrimary, fontFamily: FONTS.headingSemiBold }}>Groups</Text>
-          </Pressable>
-        ),
-        tabBarStyle: { backgroundColor: COLORS.cream, borderTopWidth: 2, borderTopColor: COLORS.border, height: 68 },
-        tabBarLabelStyle: { fontFamily: FONTS.headingMedium, fontSize: 11 },
-        tabBarActiveTintColor: COLORS.textPrimary,
-        tabBarInactiveTintColor: COLORS.textMuted,
-      }}
+      tabBar={() => null}
+      screenOptions={({ route }) => ({
+        header: () => <GroupHeader title={route.name === 'shop' ? 'Shop' : group.name} routeName={route.name} />,
+      })}
     >
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen
-        name="today"
-        options={{
-          title: 'Today',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="▥" tint={COLORS.yellow} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="feed"
-        options={{
-          title: 'Feed',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="≡" tint={COLORS.pink} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="garden"
-        options={{
-          title: 'Garden',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="♧" tint={COLORS.sage} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen name="shop" options={{ href: null, title: 'Shop' }} />
+      <Tabs.Screen name="bible" />
+      <Tabs.Screen name="feed" />
+      <Tabs.Screen name="garden" />
+      <Tabs.Screen name="shop" options={{ href: null }} />
     </Tabs>
   );
 }
@@ -137,6 +129,62 @@ const styles = StyleSheet.create({
   },
   backLink: {
     fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  headerWrap: {
+    backgroundColor: COLORS.cream,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.border,
+    paddingTop: 54,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backButton: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backGlyph: {
+    fontSize: 24,
+    fontFamily: FONTS.heading,
+    color: COLORS.textPrimary,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  segmentRow: {
+    ...HARD_SHADOW,
+    flexDirection: 'row',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  segmentActive: {
+    backgroundColor: COLORS.sage,
+  },
+  segmentText: {
+    fontFamily: FONTS.headingMedium,
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
+  segmentTextActive: {
     color: COLORS.textPrimary,
   },
 });

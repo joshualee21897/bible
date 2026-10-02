@@ -23,7 +23,7 @@ export default function SetupProfileScreen() {
     setSaving(true);
     try {
       await createMyProfile(trimmed, avatarColor);
-      router.replace('/');
+      router.replace('/today');
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {

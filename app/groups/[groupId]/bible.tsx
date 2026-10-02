@@ -38,7 +38,7 @@ function todayAsInputDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function TodayScreen() {
+export default function BibleScreen() {
   const { group, refresh: refreshGroup } = useGroup();
   const { session } = useAuth();
 

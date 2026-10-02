@@ -17,6 +17,14 @@ export function getTreeStageLabel(stage: TreeStage): string {
   return STAGE_THRESHOLDS.find((entry) => entry.stage === stage)?.label ?? 'Seed';
 }
 
+// How many more check-ins until the next stage, and what it's called —
+// null once a tree has reached the last stage.
+export function getNextStage(checkinCount: number): { label: string; remaining: number } | null {
+  const next = [...STAGE_THRESHOLDS].reverse().find((entry) => checkinCount < entry.minCheckins);
+  if (!next) return null;
+  return { label: next.label, remaining: next.minCheckins - checkinCount };
+}
+
 const RESTING_AFTER_DAYS = 3;
 
 // A tree that hasn't grown yet (a seed) isn't "resting" — it just hasn't
