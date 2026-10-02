@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
+import { LambGuide } from '../guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../theme';
 
 type Props = {
@@ -32,6 +33,7 @@ export function NewPrayerSheet({ visible, submitting, onClose, onSubmit }: Props
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <Text style={styles.title}>Share a prayer request</Text>
+        <LambGuide id="new-prayer-sheet" message="Only your group can see this." pose="praying" />
         <TextInput
           style={styles.input}
           placeholder="What's on your heart?"

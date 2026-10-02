@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../../../components/guide/LambGuide';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
@@ -122,6 +123,13 @@ export default function GroupGardenScreen() {
       }
     >
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+
+      <LambGuide
+        id="garden"
+        message="Every chapter waters your tree. Watch our garden grow!"
+        pose="happy"
+        style={styles.lambGuideFull}
+      />
 
       <View style={styles.headerCard}>
         <View style={styles.topRow}>
@@ -247,6 +255,9 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
+  },
+  lambGuideFull: {
+    width: '100%',
   },
   headerCard: {
     ...buttonBase,

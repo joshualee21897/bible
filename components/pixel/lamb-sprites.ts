@@ -2,7 +2,7 @@ import type { PaletteKey, PixelGridData } from './types';
 
 const SIZE = 24;
 
-export type LambMood = 'happy' | 'waiting' | 'sleeping';
+export type LambMood = 'happy' | 'waiting' | 'sleeping' | 'waving' | 'pointing' | 'praying';
 
 function emptyGrid(): PixelGridData {
   return Array.from({ length: SIZE }, () => Array<PaletteKey | null>(SIZE).fill(null));
@@ -44,18 +44,33 @@ export function buildLambGrid(mood: LambMood): PixelGridData {
   grid[8][3] = 'outline';
   grid[8][11] = 'outline';
 
-  // Legs.
+  // Legs (skip the back-right leg when waving or pointing — it lifts instead).
+  const liftedLeg = mood === 'waving' || mood === 'pointing';
   for (const x of [6, 10, 16, 20]) {
+    if (liftedLeg && x === 20) continue;
     grid[20][x] = 'outline';
     grid[21][x] = 'outline';
   }
 
+  if (mood === 'waving') {
+    // A small raised, bent leg beside the head.
+    grid[17][21] = 'outline';
+    grid[15][22] = 'outline';
+    grid[13][22] = 'outline';
+  } else if (mood === 'pointing') {
+    // A leg stretched out toward whatever the lamb is pointing at.
+    grid[18][22] = 'outline';
+    grid[18][23] = 'outline';
+  }
+
   // Face.
-  if (mood === 'sleeping') {
+  if (mood === 'sleeping' || mood === 'praying') {
     grid[11][5] = 'outline';
     grid[11][9] = 'outline';
-    grid[8][14] = 'outline';
-    grid[7][16] = 'outline';
+    if (mood === 'sleeping') {
+      grid[8][14] = 'outline';
+      grid[7][16] = 'outline';
+    }
   } else if (mood === 'waiting') {
     grid[10][5] = 'outline';
     grid[10][9] = 'outline';

@@ -1,18 +1,21 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../../components/guide/LambGuide';
 import { Avatar } from '../../components/pixel/Avatar';
-import { Lamb } from '../../components/pixel/Lamb';
+import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { getMyDashboard, type MyDashboard } from '../../lib/dashboard';
 import { getErrorMessage } from '../../lib/error-message';
 import { getMyProfile, type Profile } from '../../lib/profile';
-import { getTreeStage, getTreeStageLabel, getNextStage } from '../../lib/tree';
+import { getTreeStage, getTreeStageLabel, getNextStage, type TreeStage } from '../../lib/tree';
 
 const WEEKLY_PERSONAL_GOAL = 5;
+const RESTING_AFTER_DAYS = 3;
+const STAGE_ORDER: TreeStage[] = ['seed', 'sprout', 'sapling', 'tree', 'fruiting'];
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -21,15 +24,61 @@ function greeting(): string {
   return 'Good evening';
 }
 
+function buildLambGuide(dashboard: MyDashboard, stage: TreeStage, grewStage: boolean): { message: string; pose: LambMood; sparkles: boolean } {
+  if (grewStage) {
+    return { message: 'Your tree just grew! Keep going.', pose: 'happy', sparkles: true };
+  }
+
+  const groupThatBoreFruit = dashboard.groups.find((row) => row.meetsHarvestThreshold);
+  if (groupThatBoreFruit) {
+    return {
+      message: 'Our garden bore fruit this week! Time for a Harvest Supper?',
+      pose: 'happy',
+      sparkles: true,
+    };
+  }
+
+  const daysSinceLastCheckin = dashboard.lastCheckinAt
+    ? (Date.now() - new Date(dashboard.lastCheckinAt).getTime()) / (1000 * 60 * 60 * 24)
+    : null;
+  if (daysSinceLastCheckin !== null && daysSinceLastCheckin >= RESTING_AFTER_DAYS) {
+    return { message: 'Welcome back! His mercies are new every morning.', pose: 'waving', sparkles: false };
+  }
+
+  if (new Date().getDay() === 0) {
+    return { message: 'Be strong and of a good courage. — Joshua 1:9', pose: 'happy', sparkles: false };
+  }
+
+  if (dashboard.groups.length === 0) {
+    return { message: 'Join or create a group to start a garden.', pose: 'waving', sparkles: false };
+  }
+
+  const waitingGroups = dashboard.groups.filter((row) => !row.checkedInToday);
+  if (waitingGroups.length === 0) {
+    return { message: `${greeting()}! Our gardens are happy today.`, pose: 'happy', sparkles: false };
+  }
+
+  return { message: `${greeting()}! Your groups have a chapter waiting.`, pose: 'waving', sparkles: false };
+}
+
 export default function TodayDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [grewStage, setGrewStage] = useState(false);
+  const previousStageRef = useRef<TreeStage | null>(null);
 
   const load = useCallback(async () => {
     try {
       const [myProfile, myDashboard] = await Promise.all([getMyProfile(), getMyDashboard()]);
+      const newStage = getTreeStage(myDashboard.totalCheckins);
+      const previousStage = previousStageRef.current;
+      setGrewStage(
+        previousStage !== null && STAGE_ORDER.indexOf(newStage) > STAGE_ORDER.indexOf(previousStage)
+      );
+      previousStageRef.current = newStage;
+
       setProfile(myProfile);
       setDashboard(myDashboard);
       setErrorMessage(null);
@@ -66,16 +115,7 @@ export default function TodayDashboard() {
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
   const weekPercent = Math.min(100, Math.round((dashboard.weekDaysRead / WEEKLY_PERSONAL_GOAL) * 100));
-  const waitingGroups = dashboard.groups.filter((row) => !row.checkedInToday);
-  const lambMood = waitingGroups.length === 0 ? 'happy' : 'waiting';
-  const lambMessage =
-    waitingGroups.length === 0
-      ? dashboard.groups.length === 0
-        ? 'Join or create a group to start a garden.'
-        : 'All your gardens are happy today.'
-      : waitingGroups.length === 1
-        ? 'One garden is waiting for you.'
-        : `${waitingGroups.length} gardens are waiting for you.`;
+  const lambGuide = buildLambGuide(dashboard, stage, grewStage);
 
   return (
     <ScrollView
@@ -102,6 +142,13 @@ export default function TodayDashboard() {
       </View>
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+
+      <LambGuide
+        id="today"
+        message={lambGuide.message}
+        pose={lambGuide.pose}
+        sparkles={lambGuide.sparkles}
+      />
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>My tree</Text>
@@ -153,13 +200,6 @@ export default function TodayDashboard() {
           </View>
         ))}
       </View>
-
-      {dashboard.groups.length > 0 && (
-        <View style={styles.lambRow}>
-          <Lamb mood={lambMood} pixelSize={3} />
-          <Text style={styles.lambBubble}>{lambMessage}</Text>
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -315,23 +355,5 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingSemiBold,
     fontSize: 12,
     color: COLORS.success,
-  },
-  lambRow: {
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  lambBubble: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: COLORS.white,
-    fontFamily: FONTS.serif,
-    fontSize: 12,
-    color: COLORS.textPrimary,
   },
 });

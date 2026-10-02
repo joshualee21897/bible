@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../guide/LambGuide';
 import { Tree } from '../pixel/Tree';
 import { COLORS, FONTS, HARD_SHADOW } from '../theme';
 import {
@@ -98,6 +99,12 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
 
   return (
     <View style={styles.container}>
+      <LambGuide
+        id="feed-reflections"
+        message="See what everyone's learning. Tap Amen to agree."
+        pose="happy"
+        style={styles.lambGuide}
+      />
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
       <FlatList
         data={feed ?? []}
@@ -156,6 +163,9 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  lambGuide: {
+    marginBottom: 12,
   },
   center: {
     flex: 1,

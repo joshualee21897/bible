@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
+import { Lamb } from '../components/pixel/Lamb';
 import { Tree } from '../components/pixel/Tree';
 import { COLORS, FONTS } from '../components/theme';
 import type { TreeStage } from '../lib/tree';
@@ -19,6 +20,7 @@ export default function SplashGate() {
     const isLastStage = stageIndex === STAGES.length - 1;
 
     if (isLastStage) {
+      treeFade.setValue(1);
       Animated.timing(titleFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
       const timeout = setTimeout(() => router.replace('/today'), FINAL_HOLD_MS);
       return () => clearTimeout(timeout);
@@ -36,11 +38,20 @@ export default function SplashGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageIndex]);
 
+  const isLastStage = stageIndex === STAGES.length - 1;
+
   return (
     <View style={styles.container}>
-      <Animated.View style={{ opacity: treeFade }}>
-        <Tree stage={STAGES[stageIndex]} pixelSize={5} />
-      </Animated.View>
+      <View style={styles.sceneRow}>
+        <Animated.View style={{ opacity: treeFade }}>
+          <Tree stage={STAGES[stageIndex]} pixelSize={5} />
+        </Animated.View>
+        {isLastStage && (
+          <Animated.View style={{ opacity: titleFade }}>
+            <Lamb pixelSize={3} />
+          </Animated.View>
+        )}
+      </View>
       <Animated.View style={[styles.titleBlock, { opacity: titleFade }]}>
         <Text style={styles.title}>Sprout</Text>
         <Text style={styles.subtitle}>Small seeds. Growing together.</Text>
@@ -56,6 +67,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
+  },
+  sceneRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
   },
   titleBlock: {
     alignItems: 'center',

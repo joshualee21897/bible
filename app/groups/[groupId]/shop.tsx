@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../../../components/guide/LambGuide';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
@@ -118,6 +119,13 @@ export default function ShopScreen() {
         </View>
       </View>
 
+      <LambGuide
+        id="shop"
+        message="Spend our drops on gifts for the garden. Each one has a verse."
+        pose="happy"
+        style={styles.lambGuide}
+      />
+
       <View style={styles.shopNote}>
         <Text style={styles.shopNoteText}>▤ Drops are shared by our whole group.</Text>
       </View>
@@ -197,6 +205,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     padding: 16,
+  },
+  lambGuide: {
+    marginBottom: 12,
   },
   center: {
     flex: 1,

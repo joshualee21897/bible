@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../theme';
 import { showAlert } from '../../lib/alert';
 import { useAuth } from '../../lib/auth-context';
@@ -102,6 +103,13 @@ export function PrayersTab({ groupId }: { groupId: string }) {
 
   return (
     <View style={styles.container}>
+      <LambGuide
+        id="feed-prayers"
+        message="Share what's on your heart. We'll pray together."
+        pose="praying"
+        style={styles.lambGuide}
+      />
+
       <View style={styles.note}>
         <Text style={styles.noteText}>Prayers stay within this group.</Text>
       </View>
@@ -173,6 +181,9 @@ export function PrayersTab({ groupId }: { groupId: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  lambGuide: {
+    marginBottom: 12,
   },
   center: {
     flex: 1,

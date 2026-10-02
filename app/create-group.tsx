@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { LambGuide } from '../components/guide/LambGuide';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
@@ -55,6 +56,8 @@ export default function CreateGroupScreen() {
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create a group</Text>
 
+      <LambGuide id="create-group" message="Pick a book and invite friends with the code." pose="happy" style={styles.lambGuide} />
+
       <Text style={styles.label}>Group name</Text>
       <TextInput style={styles.input} placeholder="e.g. Cell group" value={name} onChangeText={setName} />
 
@@ -104,6 +107,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
     color: COLORS.textPrimary,
+  },
+  lambGuide: {
+    marginBottom: 16,
   },
   label: {
     fontWeight: '600',

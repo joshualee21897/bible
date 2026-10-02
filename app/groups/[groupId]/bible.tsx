@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { Lamb } from '../../../components/pixel/Lamb';
+import { LambGuide } from '../../../components/guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
@@ -32,7 +32,6 @@ import {
 import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
-import { getLambMood } from '../../../lib/lamb-mood';
 
 function todayAsInputDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -56,6 +55,7 @@ export default function BibleScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [justCheckedIn, setJustCheckedIn] = useState(false);
 
   // Re-anchor to today's chapter whenever the group's book or start date
   // actually changes (initial load, or after picking a new book) — but not
@@ -132,6 +132,7 @@ export default function BibleScreen() {
       setCurrentCheckin(checkin);
       setPhotoUrl(await getSignedPhotoUrl(path));
       setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
+      setJustCheckedIn(true);
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {
@@ -218,15 +219,6 @@ export default function BibleScreen() {
     );
   }
 
-  const hasCheckedInToday = checkedChapters.has(todayChapter);
-  const lambMood = getLambMood(hasCheckedInToday);
-  const lambCaption =
-    lambMood === 'sleeping'
-      ? 'The lamb is asleep.'
-      : lambMood === 'waiting'
-        ? 'The lamb is waiting by your tree.'
-        : 'The lamb is happy you read today.';
-
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
@@ -254,10 +246,13 @@ export default function BibleScreen() {
         )}
       </View>
 
-      <View style={styles.lambNudge}>
-        <Lamb mood={lambMood} pixelSize={2} />
-        <Text style={styles.lambNudgeText}>{lambCaption}</Text>
-      </View>
+      {!currentCheckin && (
+        <LambGuide
+          id="bible"
+          message="Read today's chapter, then add a photo to check in."
+          pose="pointing"
+        />
+      )}
 
       {!loading && !currentCheckin && (
         <View style={styles.checkInSection}>
@@ -279,6 +274,19 @@ export default function BibleScreen() {
             </Text>
           </Pressable>
         </View>
+      )}
+
+      {justCheckedIn && (
+        <LambGuide
+          id="bible-celebration"
+          message="Well done! Want to share what stood out?"
+          pose="happy"
+          sparkles
+          actions={[
+            { label: 'Add a reflection', primary: true, onPress: () => setJustCheckedIn(false) },
+            { label: 'Maybe later', onPress: () => setJustCheckedIn(false) },
+          ]}
+        />
       )}
 
       {!loading && currentCheckin && (
@@ -403,22 +411,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.sageDark,
-  },
-  lambNudge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  lambNudgeText: {
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    backgroundColor: COLORS.white,
-    fontFamily: FONTS.serif,
-    fontSize: 12,
-    color: COLORS.textPrimary,
   },
   button: {
     ...buttonBase,

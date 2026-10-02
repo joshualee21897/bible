@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { LambGuide } from '../../components/guide/LambGuide';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS } from '../../components/theme';
@@ -55,6 +56,15 @@ export default function MyGroupsScreen() {
       </View>
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+
+      {groups && groups.length > 0 && (
+        <LambGuide
+          id="groups-list"
+          message="Tap a group to read, share, and grow together."
+          pose="pointing"
+          style={styles.lambGuide}
+        />
+      )}
 
       <FlatList
         data={groups ?? []}
@@ -134,6 +144,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  lambGuide: {
+    marginBottom: 14,
   },
   title: {
     fontSize: 26,

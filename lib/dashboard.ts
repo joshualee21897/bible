@@ -1,7 +1,7 @@
 import { getChapterCount } from './bible-books';
 import { getCurrentChapterNumber, isBookFinished } from './checkins';
 import { listMyGroups, type MyGroup } from './groups';
-import { startOfWeek } from './weekly-goal';
+import { getWeeklyGoalSummary, startOfWeek } from './weekly-goal';
 import { supabase } from './supabase';
 
 export type MyGroupToday = {
@@ -10,11 +10,13 @@ export type MyGroupToday = {
   maxChapter: number;
   finished: boolean;
   checkedInToday: boolean;
+  meetsHarvestThreshold: boolean;
 };
 
 export type MyDashboard = {
   totalCheckins: number;
   weekDaysRead: number;
+  lastCheckinAt: string | null;
   groups: MyGroupToday[];
 };
 
@@ -48,23 +50,38 @@ export async function getMyDashboard(): Promise<MyDashboard> {
   }
 
   const checkinsByGroup = new Map<string, Set<number>>();
+  let lastCheckinAt: string | null = null;
   for (const row of myCheckins) {
     const chapters = checkinsByGroup.get(row.group_id) ?? new Set<number>();
     chapters.add(row.chapter);
     checkinsByGroup.set(row.group_id, chapters);
+    if (!lastCheckinAt || row.created_at > lastCheckinAt) {
+      lastCheckinAt = row.created_at;
+    }
   }
 
-  const groupRows: MyGroupToday[] = groups.map((group) => {
-    const maxChapter = getChapterCount(group.book);
-    const todayChapter = getCurrentChapterNumber(group.start_date, maxChapter);
-    const finished = isBookFinished(group.start_date, maxChapter);
-    const checkedInToday = checkinsByGroup.get(group.id)?.has(todayChapter) ?? false;
-    return { group, todayChapter, maxChapter, finished, checkedInToday };
-  });
+  const groupRows: MyGroupToday[] = await Promise.all(
+    groups.map(async (group) => {
+      const maxChapter = getChapterCount(group.book);
+      const todayChapter = getCurrentChapterNumber(group.start_date, maxChapter);
+      const finished = isBookFinished(group.start_date, maxChapter);
+      const checkedInToday = checkinsByGroup.get(group.id)?.has(todayChapter) ?? false;
+      const weeklyGoal = await getWeeklyGoalSummary(group.id, group.weekly_target);
+      return {
+        group,
+        todayChapter,
+        maxChapter,
+        finished,
+        checkedInToday,
+        meetsHarvestThreshold: weeklyGoal.meetsHarvestThreshold,
+      };
+    })
+  );
 
   return {
     totalCheckins,
     weekDaysRead: weekDayKeys.size,
+    lastCheckinAt,
     groups: groupRows,
   };
 }

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { LambGuide } from '../components/guide/LambGuide';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { getErrorMessage } from '../lib/error-message';
@@ -32,6 +33,7 @@ export default function JoinGroupScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Join a group</Text>
+      <LambGuide id="join-group" message="Got a code from a friend? Pop it in here." pose="happy" style={styles.lambGuide} />
       <Text style={styles.body}>Enter the invite code a group member shared with you.</Text>
       <TextInput
         style={styles.input}
@@ -61,6 +63,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
+  },
+  lambGuide: {
+    width: '100%',
+    maxWidth: 320,
   },
   body: {
     textAlign: 'center',

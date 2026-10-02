@@ -17,6 +17,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider } from '../lib/auth-context';
 import { COLORS } from '../components/theme';
+import { LambGuideProvider } from '../components/guide/guide-context';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -40,12 +41,14 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
-        <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
-        <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <LambGuideProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
+          <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
+          <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </LambGuideProvider>
     </AuthProvider>
   );
 }
