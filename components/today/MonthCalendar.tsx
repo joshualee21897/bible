@@ -58,8 +58,15 @@ export function MonthCalendar({ checkinDates }: { checkinDates: Set<string> }) {
                   isFuture && styles.dayBoxFuture,
                 ]}
               >
-                <Text style={[styles.dayText, checked && styles.dayTextChecked, isFuture && styles.dayTextFuture]}>
-                  {day}
+                <Text
+                  style={[
+                    styles.dayText,
+                    checked && styles.dayTextChecked,
+                    checked && styles.seedlingGlyph,
+                    isFuture && styles.dayTextFuture,
+                  ]}
+                >
+                  {checked ? '🌱' : day}
                 </Text>
               </View>
             </View>
@@ -146,6 +153,9 @@ const styles = StyleSheet.create({
   dayTextChecked: {
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
+  },
+  seedlingGlyph: {
+    fontSize: 16,
   },
   dayTextFuture: {
     color: COLORS.textMuted,

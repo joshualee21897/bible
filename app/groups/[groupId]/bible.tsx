@@ -20,11 +20,13 @@ import { getChapterVerses } from '../../../lib/bible';
 import { useAuth } from '../../../lib/auth-context';
 import {
   createCheckin,
+  deleteCheckinPhoto,
   getCurrentChapterNumber,
   getMyCheckedChapters,
   getMyCheckin,
   getSignedPhotoUrl,
   isBookFinished,
+  isEditableToday,
   updateCheckin,
   uploadCheckinPhoto,
   type Checkin,
@@ -117,22 +119,34 @@ export default function BibleScreen() {
     return list;
   }, [todayChapter, checkedChapters]);
 
-  async function checkInWithPhoto(asset: ImagePicker.ImagePickerAsset) {
+  async function handlePhotoPicked(asset: ImagePicker.ImagePickerAsset) {
     if (!group || selectedChapter === null || !session) return;
 
     setSaving(true);
     try {
       const path = await uploadCheckinPhoto(group.id, session.user.id, asset.uri, asset.mimeType ?? 'image/jpeg');
-      const checkin = await createCheckin({
-        groupId: group.id,
-        book: group.book,
-        chapter: selectedChapter,
-        photoPath: path,
-      });
-      setCurrentCheckin(checkin);
-      setPhotoUrl(await getSignedPhotoUrl(path));
-      setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
-      setJustCheckedIn(true);
+
+      if (currentCheckin) {
+        // Replacing the photo on an existing, still-editable check-in.
+        const oldPath = currentCheckin.photo_path;
+        const updated = await updateCheckin(currentCheckin.id, { photoPath: path });
+        setCurrentCheckin(updated);
+        setPhotoUrl(await getSignedPhotoUrl(path));
+        if (oldPath && oldPath !== path) {
+          deleteCheckinPhoto(oldPath).catch(() => {});
+        }
+      } else {
+        const checkin = await createCheckin({
+          groupId: group.id,
+          book: group.book,
+          chapter: selectedChapter,
+          photoPath: path,
+        });
+        setCurrentCheckin(checkin);
+        setPhotoUrl(await getSignedPhotoUrl(path));
+        setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
+        setJustCheckedIn(true);
+      }
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {
@@ -148,7 +162,7 @@ export default function BibleScreen() {
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
     if (result.canceled || !result.assets[0]) return;
-    await checkInWithPhoto(result.assets[0]);
+    await handlePhotoPicked(result.assets[0]);
   }
 
   async function handleChoosePhoto() {
@@ -159,7 +173,7 @@ export default function BibleScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (result.canceled || !result.assets[0]) return;
-    await checkInWithPhoto(result.assets[0]);
+    await handlePhotoPicked(result.assets[0]);
   }
 
   async function handleSaveReflection() {
@@ -299,17 +313,40 @@ export default function BibleScreen() {
 
           {photoUrl && <Image source={{ uri: photoUrl }} style={styles.photo} />}
 
-          <Text style={styles.label}>Reflection (optional)</Text>
-          <TextInput
-            style={styles.reflectionInput}
-            placeholder="What stood out to you?"
-            multiline
-            value={reflectionDraft}
-            onChangeText={setReflectionDraft}
-          />
-          <Pressable style={styles.secondaryButton} onPress={handleSaveReflection} disabled={saving}>
-            <Text style={styles.secondaryButtonText}>Post reflection</Text>
-          </Pressable>
+          {isEditableToday(currentCheckin.created_at) ? (
+            <>
+              {Platform.OS !== 'web' && (
+                <Pressable style={styles.secondaryButton} onPress={handleTakePhoto} disabled={saving}>
+                  <Text style={styles.secondaryButtonText}>{saving ? 'Saving…' : 'Retake photo'}</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.secondaryButton} onPress={handleChoosePhoto} disabled={saving}>
+                <Text style={styles.secondaryButtonText}>
+                  {saving ? 'Saving…' : Platform.OS !== 'web' ? 'Choose a different photo' : 'Change photo'}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.label}>Reflection (optional)</Text>
+              <TextInput
+                style={styles.reflectionInput}
+                placeholder="What stood out to you?"
+                multiline
+                value={reflectionDraft}
+                onChangeText={setReflectionDraft}
+              />
+              <Pressable style={styles.secondaryButton} onPress={handleSaveReflection} disabled={saving}>
+                <Text style={styles.secondaryButtonText}>
+                  {currentCheckin.reflection ? 'Update reflection' : 'Post reflection'}
+                </Text>
+              </Pressable>
+              <Text style={styles.lockNote}>You can still change this today — it's set once the day ends.</Text>
+            </>
+          ) : (
+            <>
+              {currentCheckin.reflection && <Text style={styles.reflectionReadonly}>{currentCheckin.reflection}</Text>}
+              <Text style={styles.lockNote}>This check-in is from an earlier day and can't be changed.</Text>
+            </>
+          )}
         </View>
       )}
 
@@ -467,6 +504,18 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  lockNote: {
+    marginTop: 2,
+    fontFamily: FONTS.serifItalic,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  reflectionReadonly: {
+    fontFamily: FONTS.serif,
+    fontSize: 15,
+    fontStyle: 'italic',
     color: COLORS.textPrimary,
   },
   photo: {

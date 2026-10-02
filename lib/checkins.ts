@@ -168,6 +168,22 @@ export async function getSignedPhotoUrl(photoPath: string): Promise<string | nul
   return data.signedUrl;
 }
 
+export async function deleteCheckinPhoto(photoPath: string): Promise<void> {
+  await supabase.storage.from('checkin-photos').remove([photoPath]);
+}
+
+// A check-in can still be changed on the day it was made — once a new day
+// has started (in the person's own local time), it's locked in.
+export function isEditableToday(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const now = new Date();
+  return (
+    created.getFullYear() === now.getFullYear() &&
+    created.getMonth() === now.getMonth() &&
+    created.getDate() === now.getDate()
+  );
+}
+
 export function getDayNumber(startDate: string): number {
   const start = new Date(`${startDate}T00:00:00`);
   const now = new Date();
