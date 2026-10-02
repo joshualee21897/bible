@@ -3,42 +3,31 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PixelGrid } from '../components/pixel/PixelGrid';
-import { buildTreeGrid } from '../components/pixel/tree-sprites';
-import { Lamb } from '../components/pixel/Lamb';
-import type { TreeStage } from '../lib/tree';
+import { buildAnimalGrid, type AnimalKey } from '../components/pixel/animal-sprites';
+import { buildDecorationGrid, type DecorationKey } from '../components/pixel/item-sprites';
 
-const STAGES: TreeStage[] = ['seed', 'sprout', 'sapling', 'tree', 'fruiting'];
+const ANIMALS: AnimalKey[] = ['dove', 'sparrow', 'fish', 'raven', 'donkey', 'eagle', 'lion'];
+const ITEMS: DecorationKey[] = ['well', 'bench', 'fence', 'lanterns'];
 
 export default function ArtPreview() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Tree stages — new flat style</Text>
-
+      <Text style={styles.title}>Shop animals — new flat style</Text>
       <View style={styles.row}>
-        {STAGES.map((stage) => (
-          <View key={stage} style={styles.item}>
-            <PixelGrid grid={buildTreeGrid(stage)} pixelSize={4} />
-            <Text style={styles.label}>{stage}</Text>
+        {ANIMALS.map((key) => (
+          <View key={key} style={styles.item}>
+            <PixelGrid grid={buildAnimalGrid(key)} pixelSize={5} />
+            <Text style={styles.label}>{key}</Text>
           </View>
         ))}
       </View>
 
-      <Text style={styles.title}>Resting variants</Text>
+      <Text style={styles.title}>Garden items (unchanged style, new outline color)</Text>
       <View style={styles.row}>
-        {STAGES.map((stage) => (
-          <View key={stage} style={styles.item}>
-            <PixelGrid grid={buildTreeGrid(stage, true)} pixelSize={4} />
-            <Text style={styles.label}>{stage}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={styles.title}>Lamb moods</Text>
-      <View style={styles.row}>
-        {(['happy', 'waving', 'pointing', 'sleeping'] as const).map((mood) => (
-          <View key={mood} style={styles.item}>
-            <Lamb mood={mood} pixelSize={5} />
-            <Text style={styles.label}>{mood}</Text>
+        {ITEMS.map((key) => (
+          <View key={key} style={styles.item}>
+            <PixelGrid grid={buildDecorationGrid(key)} pixelSize={5} />
+            <Text style={styles.label}>{key}</Text>
           </View>
         ))}
       </View>

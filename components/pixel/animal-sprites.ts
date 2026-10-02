@@ -1,100 +1,95 @@
-import { emptyGrid, paintEllipse, setPixel } from './shapes';
-import type { PixelGridData } from './types';
-
-const SIZE = 24;
+import { createFlatGrid, finalizeFlatGrid, stampEllipse, stampRect } from './flat-shapes';
+import type { PaletteKey, PixelGridData } from './types';
 
 export type AnimalKey = 'dove' | 'sparrow' | 'fish' | 'raven' | 'donkey' | 'eagle' | 'lion';
 
-function bird(bodyColor: 'birdLight' | 'birdDark' | 'ravenDark', bellyShade: 'birdDark' | 'ravenDark'): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 13, 15, 6, 4, bodyColor, bellyShade);
-  paintEllipse(grid, 7, 10, 3, 3, bodyColor);
-  setPixel(grid, 4, 10, 'goldDark');
-  setPixel(grid, 7, 9, 'outline');
+function buildBird(bodyColor: PaletteKey, bellyColor: PaletteKey, beakColor: PaletteKey): PixelGridData {
+  const g = createFlatGrid(24, 24);
+  stampEllipse(g, 14, 15, 6, 4.5, bodyColor);
+  stampEllipse(g, 16, 17.5, 3.2, 2.6, bellyColor);
+  stampEllipse(g, 7, 10, 3.2, 3, bodyColor);
+  stampRect(g, 3, 9, 2, 2, beakColor);
+  const grid = finalizeFlatGrid(g);
+  grid[9][6] = 'outline';
   return grid;
-}
-
-function buildDove(): PixelGridData {
-  return bird('birdLight', 'birdDark');
-}
-
-function buildSparrow(): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 13, 16, 5, 3.5, 'birdDark', 'ravenDark');
-  paintEllipse(grid, 8, 12, 2.5, 2.5, 'birdDark');
-  setPixel(grid, 5, 12, 'goldDark');
-  setPixel(grid, 8, 11, 'outline');
-  return grid;
-}
-
-function buildRaven(): PixelGridData {
-  return bird('ravenDark', 'ravenDark');
 }
 
 function buildFish(): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 12, 18, 11, 5, 'waterLight');
-  paintEllipse(grid, 13, 13, 6, 3.5, 'birdLight', 'waterDark');
-  setPixel(grid, 7, 13, 'waterDark');
-  setPixel(grid, 6, 12, 'waterDark');
-  setPixel(grid, 6, 14, 'waterDark');
-  setPixel(grid, 13, 12, 'outline');
+  // Pond, then the fish composited on top so it keeps its own outline.
+  const pondGrid = createFlatGrid(24, 24);
+  stampEllipse(pondGrid, 12, 19, 10, 3.5, 'waterLight');
+  const grid = finalizeFlatGrid(pondGrid);
+
+  const fishShape = createFlatGrid(24, 24);
+  stampEllipse(fishShape, 13, 13, 6, 3.6, 'waterDark');
+  stampEllipse(fishShape, 13, 14.3, 5, 1.6, 'waterLight');
+  stampEllipse(fishShape, 5.5, 13, 2.2, 2.8, 'waterDark');
+  const fishGrid = finalizeFlatGrid(fishShape);
+
+  for (let y = 0; y < fishGrid.length; y++) {
+    for (let x = 0; x < fishGrid[0].length; x++) {
+      if (fishGrid[y][x]) grid[y][x] = fishGrid[y][x];
+    }
+  }
+  grid[12][17] = 'outline';
   return grid;
 }
 
 function buildDonkey(): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 14, 15, 7, 4.5, 'birdDark', 'ravenDark');
-  paintEllipse(grid, 6, 11, 3.5, 3.5, 'birdDark');
-  // Long ears.
-  setPixel(grid, 4, 6, 'birdDark');
-  setPixel(grid, 4, 7, 'birdDark');
-  setPixel(grid, 4, 8, 'outline');
-  setPixel(grid, 8, 6, 'birdDark');
-  setPixel(grid, 8, 7, 'birdDark');
-  setPixel(grid, 8, 8, 'outline');
-  setPixel(grid, 5, 11, 'outline');
-  // Legs.
-  for (const x of [9, 12, 17, 20]) {
-    setPixel(grid, x, 19, 'outline');
-    setPixel(grid, x, 20, 'outline');
-  }
+  const g = createFlatGrid(24, 22);
+  stampEllipse(g, 14, 11, 7, 5, 'donkeyGray');
+  stampEllipse(g, 6, 8, 3.5, 3.5, 'donkeyGray');
+  stampEllipse(g, 4, 3, 1.5, 2.5, 'donkeyGrayDark');
+  stampEllipse(g, 8, 3, 1.5, 2.5, 'donkeyGrayDark');
+  stampRect(g, 8, 15, 1, 5, 'donkeyGrayDark');
+  stampRect(g, 12, 15, 1, 5, 'donkeyGrayDark');
+  stampRect(g, 17, 15, 1, 5, 'donkeyGrayDark');
+  stampRect(g, 20, 15, 1, 5, 'donkeyGrayDark');
+  const grid = finalizeFlatGrid(g);
+  grid[8][5] = 'outline';
+  grid[11][21] = 'outline';
+  grid[12][21] = 'outline';
   return grid;
 }
 
 function buildEagle(): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 13, 15, 6.5, 4.5, 'bark', 'ravenDark');
-  paintEllipse(grid, 8, 10, 3, 3, 'woolLight');
-  setPixel(grid, 5, 10, 'goldDark');
-  setPixel(grid, 8, 9, 'outline');
+  const g = createFlatGrid(24, 24);
+  stampEllipse(g, 14, 15, 6.5, 4.5, 'bark');
+  stampEllipse(g, 7, 10, 3.3, 3, 'woolLight');
+  stampRect(g, 3, 9, 2, 2, 'goldDark');
+  const grid = finalizeFlatGrid(g);
+  grid[9][6] = 'outline';
   return grid;
 }
 
 function buildLion(): PixelGridData {
-  const grid = emptyGrid(SIZE);
-  paintEllipse(grid, 14, 16, 6, 4, 'goldLight', 'goldDark');
-  paintEllipse(grid, 8, 11, 5, 5, 'goldDark');
-  paintEllipse(grid, 8, 11, 3, 3, 'goldLight');
-  setPixel(grid, 6, 10, 'outline');
-  setPixel(grid, 10, 10, 'outline');
-  setPixel(grid, 8, 13, 'outline');
-  // Tail with a tuft.
-  setPixel(grid, 20, 14, 'goldLight');
-  setPixel(grid, 21, 13, 'goldDark');
+  const g = createFlatGrid(24, 22);
+  stampEllipse(g, 8, 11, 5.5, 5.5, 'goldDark');
+  stampEllipse(g, 4, 8, 3, 3, 'goldDark');
+  stampEllipse(g, 12, 8, 3, 3, 'goldDark');
+  stampEllipse(g, 4, 14, 3, 3, 'goldDark');
+  stampEllipse(g, 12, 14, 3, 3, 'goldDark');
+  stampEllipse(g, 16, 14, 6, 4, 'goldLight');
+  stampEllipse(g, 8, 11, 3.2, 3, 'goldLight');
+  const grid = finalizeFlatGrid(g);
+  grid[10][6] = 'outline';
+  grid[10][10] = 'outline';
+  grid[12][21] = 'outline';
+  grid[11][22] = 'goldDark';
+  grid[10][22] = 'outline';
   return grid;
 }
 
 export function buildAnimalGrid(key: AnimalKey): PixelGridData {
   switch (key) {
     case 'dove':
-      return buildDove();
+      return buildBird('woolLight', 'woolCream', 'goldDark');
     case 'sparrow':
-      return buildSparrow();
+      return buildBird('birdDark', 'birdLight', 'goldDark');
+    case 'raven':
+      return buildBird('ravenDark', 'ravenDark', 'outline');
     case 'fish':
       return buildFish();
-    case 'raven':
-      return buildRaven();
     case 'donkey':
       return buildDonkey();
     case 'eagle':

@@ -33,6 +33,8 @@ export const PALETTE = {
   goldDark: '#E0B770',
   stoneLight: '#E5DED2',
   stoneDark: '#CBC0AE',
+  donkeyGray: '#A8958A',
+  donkeyGrayDark: '#8C7A70',
 
   // Softer, sleepier tones for a resting tree — never a "dead" look, just quieter.
   grassRestingLight: '#D8ECDA',
