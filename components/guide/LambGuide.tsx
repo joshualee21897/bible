@@ -16,7 +16,8 @@ type LambGuideAction = {
 type Props = {
   /** Unique per place this guide appears, e.g. "today", "feed-prayers". */
   id: string;
-  message: string;
+  /** A single message, or a small pool to rotate through each time the bubble is reopened. */
+  message: string | string[];
   pose?: LambMood;
   /** Which side the lamb sits on relative to its speech bubble. */
   align?: 'left' | 'right';
@@ -29,15 +30,28 @@ export function LambGuide({ id, message, pose = 'happy', align = 'left', sparkle
   const { markSeen, hasSeen } = useLambGuideSeen();
   const [isFirstVisit] = useState(() => !hasSeen(id));
   const [open, setOpen] = useState(true);
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  const messages = Array.isArray(message) ? message : [message];
 
   useEffect(() => {
     markSeen(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function toggleOpen() {
+    setOpen((current) => {
+      const next = !current;
+      if (next && messages.length > 1) {
+        setMessageIndex((i) => (i + 1) % messages.length);
+      }
+      return next;
+    });
+  }
+
   return (
     <View style={[styles.row, align === 'right' && styles.rowReverse, style]}>
-      <Pressable onPress={() => setOpen((current) => !current)} style={styles.lambWrap} hitSlop={6}>
+      <Pressable onPress={toggleOpen} style={styles.lambWrap} hitSlop={6}>
         <Lamb mood={pose} pixelSize={2} />
         {sparkles && open && <Sparkles />}
       </Pressable>
@@ -50,7 +64,7 @@ export function LambGuide({ id, message, pose = 'happy', align = 'left', sparkle
               <Text style={styles.closeGlyph}>×</Text>
             </Pressable>
             <Text style={styles.message} numberOfLines={2}>
-              {message}
+              {messages[messageIndex]}
             </Text>
             {isFirstVisit && <Text style={styles.hint}>Tap me anytime</Text>}
             {actions && actions.length > 0 && (

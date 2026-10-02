@@ -33,7 +33,15 @@ export function NewPrayerSheet({ visible, submitting, onClose, onSubmit }: Props
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <Text style={styles.title}>Share a prayer request</Text>
-        <LambGuide id="new-prayer-sheet" message="Only your group can see this." pose="praying" />
+        <LambGuide
+          id="new-prayer-sheet"
+          message={[
+            'Only your group can see this.',
+            'Share your name or stay anonymous — your choice.',
+            'Even a short prayer means a lot.',
+          ]}
+          pose="praying"
+        />
         <TextInput
           style={styles.input}
           placeholder="What's on your heart?"

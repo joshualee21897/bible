@@ -33,7 +33,16 @@ export default function JoinGroupScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Join a group</Text>
-      <LambGuide id="join-group" message="Got a code from a friend? Pop it in here." pose="happy" style={styles.lambGuide} />
+      <LambGuide
+        id="join-group"
+        message={[
+          'Got a code from a friend? Pop it in here.',
+          'Six letters from a friend unlock their garden.',
+          'Ask whoever invited you for their group code.',
+        ]}
+        pose="happy"
+        style={styles.lambGuide}
+      />
       <Text style={styles.body}>Enter the invite code a group member shared with you.</Text>
       <TextInput
         style={styles.input}

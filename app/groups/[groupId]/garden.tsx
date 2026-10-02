@@ -137,7 +137,11 @@ export default function GroupGardenScreen() {
 
       <LambGuide
         id="garden"
-        message="Every chapter waters your tree. Watch our garden grow!"
+        message={[
+          'Every chapter waters your tree. Watch our garden grow!',
+          'Resting trees are always welcome here.',
+          'Our garden grows a little with each check-in.',
+        ]}
         pose="happy"
         style={styles.lambGuideFull}
       />
@@ -194,15 +198,6 @@ export default function GroupGardenScreen() {
           <Text style={styles.flowerGlyph}>✦</Text>
         </View>
 
-        <View style={styles.lambRow}>
-          <Lamb mood={lambMood} pixelSize={3} />
-          <Text style={styles.lambCaption}>
-            {lambMood === 'sleeping' && 'The lamb is asleep.'}
-            {lambMood === 'waiting' && 'The lamb is waiting by your tree.'}
-            {lambMood === 'happy' && 'The lamb is happy to see our garden.'}
-          </Text>
-        </View>
-
         <View style={styles.grove}>
           {members.map((member) => {
             const stage = getTreeStage(member.checkin_count);
@@ -215,7 +210,16 @@ export default function GroupGardenScreen() {
               </View>
             );
           })}
+          <View style={styles.lambSlot}>
+            <Lamb mood={lambMood} pixelSize={3} />
+          </View>
         </View>
+
+        <Text style={styles.lambCaption}>
+          {lambMood === 'sleeping' && 'The lamb is asleep.'}
+          {lambMood === 'waiting' && 'The lamb is waiting by your tree.'}
+          {lambMood === 'happy' && 'The lamb is happy to see our garden.'}
+        </Text>
       </View>
 
       <View style={styles.caption}>
@@ -479,12 +483,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#D77F86',
   },
-  lambRow: {
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 8,
-  },
   lambCaption: {
+    marginTop: 10,
+    textAlign: 'center',
     fontFamily: FONTS.serif,
     fontSize: 12,
     color: COLORS.textMuted,
@@ -492,12 +493,17 @@ const styles = StyleSheet.create({
   grove: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 12,
   },
   treeSlot: {
     alignItems: 'center',
     width: 90,
+  },
+  lambSlot: {
+    alignItems: 'center',
+    width: 70,
   },
   memberName: {
     marginTop: 4,

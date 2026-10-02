@@ -60,7 +60,11 @@ export default function MyGroupsScreen() {
       {groups && groups.length > 0 && (
         <LambGuide
           id="groups-list"
-          message="Tap a group to read, share, and grow together."
+          message={[
+            'Tap a group to read, share, and grow together.',
+            'Every group has its own little garden waiting.',
+            "Pick a group below to see today's chapter.",
+          ]}
           pose="pointing"
           style={styles.lambGuide}
         />

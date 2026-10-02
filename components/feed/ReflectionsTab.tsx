@@ -101,7 +101,11 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
     <View style={styles.container}>
       <LambGuide
         id="feed-reflections"
-        message="See what everyone's learning. Tap Amen to agree."
+        message={[
+          "See what everyone's learning. Tap Amen to agree.",
+          'Every reflection helps the group grow together.',
+          'A quick Amen means a lot to someone who shared.',
+        ]}
         pose="happy"
         style={styles.lambGuide}
       />

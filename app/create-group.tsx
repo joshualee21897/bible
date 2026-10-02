@@ -56,7 +56,16 @@ export default function CreateGroupScreen() {
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create a group</Text>
 
-      <LambGuide id="create-group" message="Pick a book and invite friends with the code." pose="happy" style={styles.lambGuide} />
+      <LambGuide
+        id="create-group"
+        message={[
+          'Pick a book and invite friends with the code.',
+          "Share the invite code once your group is ready.",
+          'Any book, any pace — just pick a starting point.',
+        ]}
+        pose="happy"
+        style={styles.lambGuide}
+      />
 
       <Text style={styles.label}>Group name</Text>
       <TextInput style={styles.input} placeholder="e.g. Cell group" value={name} onChangeText={setName} />

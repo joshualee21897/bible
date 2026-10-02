@@ -105,7 +105,11 @@ export function PrayersTab({ groupId }: { groupId: string }) {
     <View style={styles.container}>
       <LambGuide
         id="feed-prayers"
-        message="Share what's on your heart. We'll pray together."
+        message={[
+          "Share what's on your heart. We'll pray together.",
+          'No request is too small to bring here.',
+          'Tap Praying for you to let someone know you care.',
+        ]}
         pose="praying"
         style={styles.lambGuide}
       />

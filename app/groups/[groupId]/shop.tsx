@@ -121,7 +121,11 @@ export default function ShopScreen() {
 
       <LambGuide
         id="shop"
-        message="Spend our drops on gifts for the garden. Each one has a verse."
+        message={[
+          'Spend our drops on gifts for the garden. Each one has a verse.',
+          "Everyone's reading fills the same drop balance.",
+          'Each gift comes with a little piece of scripture.',
+        ]}
         pose="happy"
         style={styles.lambGuide}
       />

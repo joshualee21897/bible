@@ -91,7 +91,11 @@ export default function ReadScreen() {
 
       <LambGuide
         id="read"
-        message="Tap a verse number to highlight it, or ✎ to add a note."
+        message={[
+          'Tap a verse number to highlight it, or ✎ to add a note.',
+          'Your highlights and notes are just for you.',
+          'Browse any book, any chapter, anytime.',
+        ]}
         pose="pointing"
         style={styles.lambGuide}
       />

@@ -249,7 +249,11 @@ export default function BibleScreen() {
       {!currentCheckin && (
         <LambGuide
           id="bible"
-          message="Read today's chapter, then add a photo to check in."
+          message={[
+            "Read today's chapter, then add a photo to check in.",
+            'A photo of your Bible or coffee is all it takes.',
+            'Take your time — the chapter will be here all day.',
+          ]}
           pose="pointing"
         />
       )}
