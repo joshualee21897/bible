@@ -1,7 +1,8 @@
-import { Tabs, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Tabs, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS, FONTS, HARD_SHADOW, buttonBase } from '../../../components/theme';
+import { useAuth } from '../../../lib/auth-context';
 import { GroupProvider, useGroup } from '../../../lib/group-context';
 
 const SEGMENTS = [
@@ -96,6 +97,19 @@ function GroupTabs() {
 
 export default function GroupLayout() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/sign-in" />;
+  }
 
   return (
     <GroupProvider groupId={groupId}>
