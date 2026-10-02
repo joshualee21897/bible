@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
@@ -63,6 +63,17 @@ export default function GroupGardenScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleShareInvite() {
+    if (!group) return;
+    try {
+      await Share.share({
+        message: `Join our Bible reading group "${group.name}" on Sprout! Use invite code ${group.invite_code} in the app.`,
+      });
+    } catch {
+      // The user cancelled the share sheet — nothing to do.
+    }
+  }
 
   async function handleLeaveGroup() {
     if (!group) return;
@@ -140,6 +151,16 @@ export default function GroupGardenScreen() {
           <View style={styles.balanceBadge}>
             <Text style={styles.balance}>💧 {drops.balance}</Text>
           </View>
+        </View>
+
+        <View style={styles.inviteRow}>
+          <View style={styles.inviteCodeBox}>
+            <Text style={styles.inviteCodeLabel}>Invite code</Text>
+            <Text style={styles.inviteCode}>{group.invite_code}</Text>
+          </View>
+          <Pressable style={styles.inviteShareButton} onPress={handleShareInvite}>
+            <Text style={styles.inviteShareButtonText}>Share</Text>
+          </Pressable>
         </View>
 
         <View style={styles.goalCard}>
@@ -306,6 +327,43 @@ const styles = StyleSheet.create({
   },
   shopButtonText: {
     fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  inviteCodeBox: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: COLORS.yellow,
+  },
+  inviteCodeLabel: {
+    fontFamily: FONTS.serif,
+    fontSize: 10,
+    color: COLORS.textMuted,
+  },
+  inviteCode: {
+    marginTop: 1,
+    fontFamily: FONTS.heading,
+    fontSize: 18,
+    letterSpacing: 3,
+    color: COLORS.textPrimary,
+  },
+  inviteShareButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.sage,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  inviteShareButtonText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
     color: COLORS.textPrimary,
   },
   goalCard: {
