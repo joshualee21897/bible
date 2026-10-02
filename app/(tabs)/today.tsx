@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../components/guide/LambGuide';
+import { MonthCalendar } from '../../components/today/MonthCalendar';
 import { Avatar } from '../../components/pixel/Avatar';
 import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
@@ -200,6 +201,8 @@ export default function TodayDashboard() {
           </View>
         ))}
       </View>
+
+      <MonthCalendar checkinDates={dashboard.checkinDates} />
     </ScrollView>
   );
 }

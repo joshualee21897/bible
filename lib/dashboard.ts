@@ -17,6 +17,7 @@ export type MyDashboard = {
   totalCheckins: number;
   weekDaysRead: number;
   lastCheckinAt: string | null;
+  checkinDates: Set<string>;
   groups: MyGroupToday[];
 };
 
@@ -50,11 +51,13 @@ export async function getMyDashboard(): Promise<MyDashboard> {
   }
 
   const checkinsByGroup = new Map<string, Set<number>>();
+  const checkinDates = new Set<string>();
   let lastCheckinAt: string | null = null;
   for (const row of myCheckins) {
     const chapters = checkinsByGroup.get(row.group_id) ?? new Set<number>();
     chapters.add(row.chapter);
     checkinsByGroup.set(row.group_id, chapters);
+    checkinDates.add(row.created_at.slice(0, 10));
     if (!lastCheckinAt || row.created_at > lastCheckinAt) {
       lastCheckinAt = row.created_at;
     }
@@ -82,6 +85,7 @@ export async function getMyDashboard(): Promise<MyDashboard> {
     totalCheckins,
     weekDaysRead: weekDayKeys.size,
     lastCheckinAt,
+    checkinDates,
     groups: groupRows,
   };
 }
