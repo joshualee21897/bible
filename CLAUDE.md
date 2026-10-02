@@ -1,4 +1,4 @@
-# Project brief: group Bible reading app (working name: "Flock")
+# Project brief: group Bible reading app ("Sprout" — The Mustard Seed Bible Reading App)
 
 ## About me and how to work with me
 - I'm not a professional developer. Explain what you're doing in plain language, one step at a time.

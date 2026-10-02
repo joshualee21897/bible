@@ -1,4 +1,4 @@
--- Flock database setup.
+-- Sprout database setup.
 -- Run this once in the Supabase dashboard: Project > SQL Editor > New query,
 -- paste this whole file, and click Run.
 

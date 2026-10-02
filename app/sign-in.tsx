@@ -68,8 +68,8 @@ export default function SignInScreen() {
             <Lamb pixelSize={3} />
             <Tree stage="sprout" pixelSize={3} />
           </View>
-          <Text style={styles.heroTitle}>Flock</Text>
-          <Text style={styles.heroSubtitle}>Stay in the Word, together.</Text>
+          <Text style={styles.heroTitle}>Sprout</Text>
+          <Text style={styles.heroSubtitle}>The Mustard Seed Bible Reading App</Text>
         </View>
       </View>
 

@@ -1,4 +1,4 @@
--- Flock: full database setup, safe to run even if some of this already
+-- Sprout: full database setup, safe to run even if some of this already
 -- ran before (it won't error on things that already exist).
 
 create extension if not exists pgcrypto;

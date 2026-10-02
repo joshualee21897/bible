@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "flock",
-    "slug": "flock",
-    "scheme": "flock",
+    "name": "Sprout",
+    "slug": "sprout",
+    "scheme": "sprout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,8 +29,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Flock to access your photos so you can share a check-in picture.",
-          "cameraPermission": "Allow Flock to access your camera so you can take a check-in picture."
+          "photosPermission": "Allow Sprout to access your photos so you can share a check-in picture.",
+          "cameraPermission": "Allow Sprout to access your camera so you can take a check-in picture."
         }
       ]
     ]
