@@ -1,83 +1,69 @@
 import type { PaletteKey, PixelGridData } from './types';
 
-const SIZE = 24;
-
 export type LambMood = 'happy' | 'waiting' | 'sleeping' | 'waving' | 'pointing' | 'praying';
 
-function emptyGrid(): PixelGridData {
-  return Array.from({ length: SIZE }, () => Array<PaletteKey | null>(SIZE).fill(null));
-}
+// A pixel-exact port of a reference sheep sprite: a side-view walking sheep
+// with a pale cream face, pink cheek blush, two-tone wool (white back, cream
+// belly), and three visible tan legs with hooves. This is the base pose used
+// for "happy", "waiting", and "praying" — moods that only need a caption
+// change, not a different stance. "sleeping", "waving", and "pointing" add
+// small marks on top of it.
+const BASE_GRID: (PaletteKey | null)[][] = [
+  [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, null, null, null, 'outline', 'outline', 'outline', 'outline', null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, 'outline', 'outline', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', 'outline', 'outline', 'outline', null, null, null, null],
+  [null, null, null, null, null, 'outline', 'outline', null, 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', null, null, null],
+  [null, null, null, 'outline', 'outline', 'woolLight', 'woolLight', 'outline', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', null, null, null],
+  [null, null, 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', 'outline', null, null],
+  [null, 'outline', null, 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', 'woolLight', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline', null],
+  ['outline', 'faceCream', 'outline', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'outline', 'faceCream', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'outline'],
+  ['outline', 'faceCream', 'faceCream', 'faceCream', 'outline', 'faceCream', 'faceCream', 'outline', 'faceCream', 'faceCream', 'faceCream', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolCream', 'woolCream', 'woolCream', 'outline', null],
+  [null, 'outline', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolCream', 'woolCream', 'woolCream', 'outline', null],
+  [null, null, 'outline', 'cheekLight', 'faceCream', 'cheekDark', 'cheekDark', 'faceCream', 'cheekLight', 'outline', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolLight', 'woolCream', 'woolCream', 'outline', null, null],
+  [null, null, null, 'outline', 'faceCream', 'faceCream', 'faceCream', 'faceCream', 'outline', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'outline', null],
+  [null, null, null, null, 'outline', 'outline', 'outline', 'outline', 'outline', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'outline', null],
+  [null, null, null, null, null, null, null, null, 'outline', 'woolCream', 'woolCream', 'woolCream', 'outline', 'woolCream', 'woolCream', 'woolCream', 'woolCream', 'outline', 'outline', 'woolCream', 'woolCream', 'outline', null, null],
+  [null, null, null, null, null, null, null, null, null, 'outline', 'outline', 'outline', null, 'outline', 'woolCream', 'woolCream', 'outline', 'outline', 'legTan', 'outline', 'outline', null, null, null],
+  [null, null, null, null, null, null, null, null, null, 'outline', 'legTan', 'outline', null, null, 'outline', 'outline', 'outline', 'outline', 'legTan', 'outline', null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, 'outline', 'legHoof', 'outline', null, null, 'outline', 'legHoof', 'outline', 'outline', 'legHoof', 'outline', null, null, null, null],
+  [null, null, null, null, null, null, null, null, null, null, 'outline', null, null, null, null, 'outline', null, null, 'outline', null, null, null, null, null],
+];
 
-function paintEllipse(
-  grid: PixelGridData,
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  fill: PaletteKey,
-  shadeBelow?: PaletteKey
-) {
-  const outlineBand = 1 / Math.max(rx, ry);
-  for (let y = Math.floor(cy - ry - 1); y <= Math.ceil(cy + ry + 1); y++) {
-    for (let x = Math.floor(cx - rx - 1); x <= Math.ceil(cx + rx + 1); x++) {
-      if (y < 0 || y >= SIZE || x < 0 || x >= SIZE) continue;
-      const dx = (x - cx + 0.5) / rx;
-      const dy = (y - cy + 0.5) / ry;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist <= 1) {
-        grid[y][x] = shadeBelow && dy > 0.4 ? shadeBelow : fill;
-      } else if (dist <= 1 + outlineBand) {
-        grid[y][x] = 'outline';
-      }
-    }
-  }
+function cloneBase(): PixelGridData {
+  return BASE_GRID.map((row) => [...row]);
 }
 
 export function buildLambGrid(mood: LambMood): PixelGridData {
-  const grid = emptyGrid();
+  const grid = cloneBase();
 
-  // Body, then head in front of it (drawn second so it isn't covered).
-  paintEllipse(grid, 14, 16, 7, 5, 'woolLight', 'woolShade');
-  paintEllipse(grid, 7, 12, 4, 4, 'woolLight', 'woolShade');
-
-  // Ears.
-  grid[8][3] = 'outline';
-  grid[8][11] = 'outline';
-
-  // Legs (skip the back-right leg when waving or pointing — it lifts instead).
-  const liftedLeg = mood === 'waving' || mood === 'pointing';
-  for (const x of [6, 10, 16, 20]) {
-    if (liftedLeg && x === 20) continue;
-    grid[20][x] = 'outline';
-    grid[21][x] = 'outline';
-  }
-
-  if (mood === 'waving') {
-    // A small raised, bent leg beside the head.
-    grid[17][21] = 'outline';
-    grid[15][22] = 'outline';
-    grid[13][22] = 'outline';
-  } else if (mood === 'pointing') {
-    // A leg stretched out toward whatever the lamb is pointing at.
-    grid[18][22] = 'outline';
-    grid[18][23] = 'outline';
-  }
-
-  // Face.
-  if (mood === 'sleeping' || mood === 'praying') {
-    grid[11][5] = 'outline';
-    grid[11][9] = 'outline';
-    if (mood === 'sleeping') {
-      grid[8][14] = 'outline';
-      grid[7][16] = 'outline';
-    }
-  } else if (mood === 'waiting') {
-    grid[10][5] = 'outline';
-    grid[10][9] = 'outline';
-    grid[13][7] = 'outline';
-  } else {
-    grid[10][5] = 'outline';
-    grid[10][9] = 'outline';
+  switch (mood) {
+    case 'happy':
+    case 'waiting':
+    case 'praying':
+      break;
+    case 'sleeping':
+      // A small "z" trail above the head.
+      grid[1][17] = 'outline';
+      grid[2][16] = 'outline';
+      grid[2][17] = 'outline';
+      grid[3][15] = 'outline';
+      grid[3][16] = 'outline';
+      break;
+    case 'waving':
+      // A small raised leg beside the back, in the open space above the wool.
+      grid[7][21] = 'outline';
+      grid[7][22] = 'outline';
+      grid[8][22] = 'outline';
+      break;
+    case 'pointing':
+      // A leg stretched out toward whatever the lamb is pointing at.
+      grid[12][23] = 'outline';
+      grid[13][22] = 'outline';
+      grid[13][23] = 'outline';
+      break;
   }
 
   return grid;

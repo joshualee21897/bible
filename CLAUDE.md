@@ -119,19 +119,21 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 
 - **Sprites as code:** draw every sprite as a pixel grid in code (e.g., a TypeScript array of palette keys) and render it with SVG `<rect>`s or a canvas scaled up. There should be no downloaded image files, so art is easy to tweak.
 - **Grid sizes:**
-  - The lamb and animals are around 24×24 pixels.
+  - The lamb and animals are around 24 pixels wide (not necessarily square — the lamb's grid is wider than it is tall, since it's drawn side-on).
   - Trees are around 32×32 pixels, with one sprite per stage plus a "resting" variant.
 - **Crisp rendering:** scale up by whole numbers only (×3, ×4), and use `image-rendering: pixelated` for any bitmap.
 - **Palette (limited, earthy, warm):**
-  - Outline: black `#000000`
+  - Outline: warm dark brown `#4A3F35` (not pure black)
   - Lamb wool: `#F7F3E8`, with shade `#D9D2C0`
+  - Lamb face: cream `#F7D9C4`, with pink cheek blush `#F6B8B8`/`#E8A598`
+  - Lamb legs: tan `#E6C9B4`, with darker hooves `#C9A88E`
   - Grass: `#6DAA45` and `#4E8A32`
   - Bark: `#7A4E2D`
   - Leaves: `#3F8F4A` and `#77C063`
   - Fruit: `#C8403A`
   - Water and pond: `#8EC5F0` and `#5B9BD5`
   - Sky and background: white `#FFFFFF`
-- **Lamb design:** round fluffy white body, small black face and legs, tiny ears, and big friendly eyes. Give it a simple 2-frame idle animation (a bob or blink). Draw one sprite for each mood (happy, waiting, sleeping with "z z").
+- **Lamb design (v2):** a side-view sheep with a fluffy white-and-cream wool body (a lighter top, slightly deeper cream underside), a pale cream face with pink cheek blush and simple dot eyes, and tan legs with hooves — not the original plain white/black design. Moods: happy, waiting, praying (share one calm standing pose), sleeping (adds a small "z" trail), waving and pointing (add a small raised or outstretched leg). Give it a simple 2-frame idle animation (a bob or blink) when animated.
 - **Type:**
   - Use a pixel font (e.g., "Pixelify Sans" or "Silkscreen" from Google Fonts) for headings, numbers, and buttons.
   - Use a highly readable serif (e.g., "Literata") for the Bible text and reflections. Scripture must be comfortable to read.

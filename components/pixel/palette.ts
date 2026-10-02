@@ -1,9 +1,18 @@
 // A soft pastel garden palette. Outlines stay black (the 8-bit look), but
 // every fill color is a gentle pastel instead of a saturated, earthy tone.
 export const PALETTE = {
-  outline: '#000000',
+  outline: '#4A3F35',
   woolLight: '#FBF6EF',
   woolShade: '#EBDFD0',
+
+  // The lamb's new flat, crisp-outline look (ported pixel-for-pixel from a
+  // reference sprite the user supplied).
+  woolCream: '#F1E9DC',
+  faceCream: '#F7D9C4',
+  cheekLight: '#F6B8B8',
+  cheekDark: '#E8A598',
+  legTan: '#E6C9B4',
+  legHoof: '#C9A88E',
   grassLight: '#B9E4C0',
   grassDark: '#8FCC9D',
   bark: '#D8A98B',
