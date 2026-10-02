@@ -79,6 +79,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="read"
+        options={{
+          title: 'Read',
+          tabBarIcon: ({ focused }) => <TabIcon glyph="▤" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="groups"
         options={{
           title: 'Groups',
