@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { BookPickerSheet } from '../../components/read/BookPickerSheet';
+import { ChapterPickerSheet } from '../../components/read/ChapterPickerSheet';
 import { NoteSheet } from '../../components/read/NoteSheet';
 import { LambGuide } from '../../components/guide/LambGuide';
-import { buttonBase, COLORS, FONTS } from '../../components/theme';
+import { COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { getChapterAnnotations, saveNote, setHighlight, type VerseAnnotation } from '../../lib/annotations';
 import { getChapterVerses } from '../../lib/bible';
 import { BIBLE_BOOKS, getChapterCount } from '../../lib/bible-books';
@@ -17,6 +19,8 @@ export default function ReadScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noteSheet, setNoteSheet] = useState<{ verse: number } | null>(null);
   const [savingNote, setSavingNote] = useState(false);
+  const [bookSheetOpen, setBookSheetOpen] = useState(false);
+  const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
 
   const maxChapter = getChapterCount(book);
 
@@ -92,40 +96,38 @@ export default function ReadScreen() {
         style={styles.lambGuide}
       />
 
-      <ScrollView horizontal style={styles.bookPicker} showsHorizontalScrollIndicator={false}>
-        {BIBLE_BOOKS.map((b) => (
+      <View style={styles.pickerRow}>
+        <Pressable style={styles.bookPill} onPress={() => setBookSheetOpen(true)}>
+          <Text style={styles.pickerPillText} numberOfLines={1}>
+            {book}
+          </Text>
+          <Text style={styles.pickerCaret}>▾</Text>
+        </Pressable>
+        <Pressable style={styles.chapterPill} onPress={() => setChapterSheetOpen(true)}>
+          <Text style={styles.pickerPillText}>{chapter}</Text>
+          <Text style={styles.pickerCaret}>▾</Text>
+        </Pressable>
+        <View style={styles.navArrows}>
           <Pressable
-            key={b.name}
-            onPress={() => {
-              setBook(b.name);
-              setChapter(1);
-            }}
-            style={[styles.chip, book === b.name && styles.chipSelected]}
+            style={[styles.navArrow, chapter <= 1 && styles.navArrowDisabled]}
+            disabled={chapter <= 1}
+            onPress={() => setChapter((c) => c - 1)}
           >
-            <Text style={[styles.chipText, book === b.name && styles.chipTextSelected]}>{b.name}</Text>
+            <Text style={styles.navArrowText}>‹</Text>
           </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView horizontal style={styles.chapterPicker} showsHorizontalScrollIndicator={false}>
-        {Array.from({ length: maxChapter }, (_, index) => index + 1).map((c) => (
           <Pressable
-            key={c}
-            onPress={() => setChapter(c)}
-            style={[styles.chapterChip, chapter === c && styles.chipSelected]}
+            style={[styles.navArrow, chapter >= maxChapter && styles.navArrowDisabled]}
+            disabled={chapter >= maxChapter}
+            onPress={() => setChapter((c) => c + 1)}
           >
-            <Text style={[styles.chipText, chapter === c && styles.chipTextSelected]}>{c}</Text>
+            <Text style={styles.navArrowText}>›</Text>
           </Pressable>
-        ))}
-      </ScrollView>
+        </View>
+      </View>
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       <ScrollView style={styles.versesScroll} contentContainerStyle={styles.versesContent}>
-        <Text style={styles.reference}>
-          {book} {chapter}
-        </Text>
-
         {loading ? (
           <ActivityIndicator style={styles.loading} />
         ) : (
@@ -157,6 +159,29 @@ export default function ReadScreen() {
         onClose={() => setNoteSheet(null)}
         onSave={(note) => noteSheet && handleSaveNote(noteSheet.verse, note)}
       />
+
+      <BookPickerSheet
+        visible={bookSheetOpen}
+        selectedBook={book}
+        onClose={() => setBookSheetOpen(false)}
+        onSelect={(selected) => {
+          setBook(selected);
+          setChapter(1);
+          setBookSheetOpen(false);
+        }}
+      />
+
+      <ChapterPickerSheet
+        visible={chapterSheetOpen}
+        book={book}
+        maxChapter={maxChapter}
+        selectedChapter={chapter}
+        onClose={() => setChapterSheetOpen(false)}
+        onSelect={(selected) => {
+          setChapter(selected);
+          setChapterSheetOpen(false);
+        }}
+      />
     </View>
   );
 }
@@ -177,43 +202,67 @@ const styles = StyleSheet.create({
   lambGuide: {
     marginBottom: 12,
   },
-  bookPicker: {
+  pickerRow: {
     flexDirection: 'row',
-    marginBottom: 8,
-  },
-  chapterPicker: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  chip: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    backgroundColor: COLORS.white,
-  },
-  chapterChip: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    minWidth: 36,
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginRight: 8,
+    gap: 8,
+    marginBottom: 12,
+  },
+  bookPill: {
+    ...HARD_SHADOW,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     backgroundColor: COLORS.white,
   },
-  chipSelected: {
-    backgroundColor: COLORS.lavender,
+  chapterPill: {
+    ...HARD_SHADOW,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: COLORS.white,
   },
-  chipText: {
-    fontFamily: FONTS.headingMedium,
-    fontSize: 12,
+  pickerPillText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
-  chipTextSelected: {
+  pickerCaret: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  navArrows: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  navArrow: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: COLORS.sage,
+  },
+  navArrowDisabled: {
+    backgroundColor: COLORS.cream,
+    opacity: 0.5,
+  },
+  navArrowText: {
+    fontFamily: FONTS.heading,
+    fontSize: 16,
     color: COLORS.textPrimary,
   },
   error: {
@@ -225,12 +274,6 @@ const styles = StyleSheet.create({
   },
   versesContent: {
     paddingBottom: 40,
-  },
-  reference: {
-    fontSize: 20,
-    fontFamily: FONTS.heading,
-    color: COLORS.textPrimary,
-    marginBottom: 10,
   },
   loading: {
     marginVertical: 24,
