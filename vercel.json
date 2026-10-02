@@ -7,6 +7,7 @@
     { "source": "/groups/:groupId/feed", "destination": "/groups/[groupId]/feed.html" },
     { "source": "/groups/:groupId/garden", "destination": "/groups/[groupId]/garden.html" },
     { "source": "/groups/:groupId/shop", "destination": "/groups/[groupId]/shop.html" },
-    { "source": "/groups/:groupId", "destination": "/groups/[groupId]/index.html" }
+    { "source": "/groups/:groupId", "destination": "/groups/[groupId]/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
