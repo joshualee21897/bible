@@ -11,8 +11,11 @@ export const PREVIEW_PALETTE = {
   flowerPetal: '#FFFFFF',
   flowerCenter: '#F6C94C',
   woolWhite: '#FFFFFF',
+  woolShade: '#E9E9E9',
   lambLeg: '#1A1A1A',
   lambNose: '#F2A6A6',
+  faceTan: '#C89A6E',
+  faceTanShade: '#B3835A',
 } as const;
 
 export type PreviewPaletteKey = keyof typeof PREVIEW_PALETTE;

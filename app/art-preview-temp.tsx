@@ -4,31 +4,31 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PreviewPixelGrid } from '../components/pixel/preview/PreviewPixelGrid';
 import { buildIsoGroundTile } from '../components/pixel/preview/iso-ground-tile';
-import { buildFlatLamb } from '../components/pixel/preview/lamb-flat';
+import { buildFlatLamb, buildFlatLambStanding } from '../components/pixel/preview/lamb-flat';
 
 export default function ArtPreview() {
   const tile = buildIsoGroundTile();
-  const lamb = buildFlatLamb();
+  const restingLamb = buildFlatLamb();
+  const standingLamb = buildFlatLambStanding();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>New art direction — proof of concept</Text>
+      <Text style={styles.title}>New art direction — v2</Text>
 
       <View style={styles.stage}>
         <View style={styles.tileLayer}>
           <PreviewPixelGrid grid={tile} pixelSize={7} />
         </View>
         <View style={styles.lambLayer}>
-          <PreviewPixelGrid grid={lamb} pixelSize={7} />
+          <PreviewPixelGrid grid={restingLamb} pixelSize={6} />
         </View>
       </View>
 
-      <Text style={styles.caption}>Ground tile + lamb, standalone</Text>
-      <View style={styles.row}>
-        <PreviewPixelGrid grid={tile} pixelSize={5} />
-        <View style={{ width: 24 }} />
-        <PreviewPixelGrid grid={lamb} pixelSize={9} />
-      </View>
+      <Text style={styles.caption}>Resting lamb, standalone</Text>
+      <PreviewPixelGrid grid={restingLamb} pixelSize={10} />
+
+      <Text style={styles.caption}>Standing lamb, standalone</Text>
+      <PreviewPixelGrid grid={standingLamb} pixelSize={10} />
     </ScrollView>
   );
 }
@@ -55,16 +55,12 @@ const styles = StyleSheet.create({
   },
   lambLayer: {
     position: 'absolute',
-    top: 7 * 9,
+    top: 7 * 11,
     left: 7 * 10,
   },
   caption: {
     marginTop: 12,
     fontSize: 13,
     color: '#666',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 });

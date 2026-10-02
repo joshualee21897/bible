@@ -31,18 +31,23 @@ export function buildIsoGroundTile(): PreviewGridData {
   strokePolygon(grid, rightFace, 'outline');
   strokePolygon(grid, [N, E, S, W], 'outline');
 
-  // A few small flowers scattered on the grass.
+  // A few small flowers scattered on the grass — bigger and bolder so they
+  // actually show up against the green.
   const flowers: Point[] = [
     [cx - 5, topY + 5],
     [cx + 6, topY + 7],
-    [cx - 1, topY + 9],
+    [cx - 1, topY + 10],
   ];
   for (const [fx, fy] of flowers) {
-    setPixel(grid, fx, fy, 'flowerCenter');
     setPixel(grid, fx - 1, fy, 'flowerPetal');
     setPixel(grid, fx + 1, fy, 'flowerPetal');
     setPixel(grid, fx, fy - 1, 'flowerPetal');
     setPixel(grid, fx, fy + 1, 'flowerPetal');
+    setPixel(grid, fx, fy, 'flowerCenter');
+    setPixel(grid, fx - 1, fy - 1, 'outline');
+    setPixel(grid, fx + 1, fy - 1, 'outline');
+    setPixel(grid, fx - 1, fy + 1, 'outline');
+    setPixel(grid, fx + 1, fy + 1, 'outline');
   }
 
   // Fence posts ringing the top edge.
@@ -64,10 +69,15 @@ export function buildIsoGroundTile(): PreviewGridData {
 }
 
 function paintFencePost(grid: PreviewGridData, x: number, y: number) {
-  for (let i = 0; i < 5; i++) {
+  // A chunkier 2px-wide post with a capped top, instead of a single spindly line.
+  for (let i = 0; i < 4; i++) {
     setPixel(grid, x, y - i, 'fencePost');
+    setPixel(grid, x + 1, y - i, 'fencePost');
   }
-  setPixel(grid, x, y - 5, 'outline');
+  setPixel(grid, x - 1, y - 4, 'outline');
+  setPixel(grid, x, y - 4, 'outline');
+  setPixel(grid, x + 1, y - 4, 'outline');
+  setPixel(grid, x + 2, y - 4, 'outline');
   setPixel(grid, x - 1, y, 'outline');
-  setPixel(grid, x + 1, y, 'outline');
+  setPixel(grid, x + 2, y, 'outline');
 }
