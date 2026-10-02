@@ -1,8 +1,36 @@
 import { Tabs, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { buttonBase, COLORS } from '../../../components/theme';
+import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { GroupProvider, useGroup } from '../../../lib/group-context';
+
+function TabIcon({ glyph, tint, focused }: { glyph: string; tint: string; focused: boolean }) {
+  return (
+    <View style={[tabIconStyles.box, { backgroundColor: tint }, focused && tabIconStyles.boxFocused]}>
+      <Text style={tabIconStyles.glyph}>{glyph}</Text>
+    </View>
+  );
+}
+
+const tabIconStyles = StyleSheet.create({
+  box: {
+    width: 34,
+    height: 30,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxFocused: {
+    borderColor: COLORS.border,
+  },
+  glyph: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+  },
+});
 
 function GroupTabs() {
   const { group, loading, error, refresh } = useGroup();
@@ -33,22 +61,42 @@ function GroupTabs() {
     <Tabs
       screenOptions={{
         headerTitle: group.name,
-        headerStyle: { backgroundColor: COLORS.surface },
+        headerTitleStyle: { fontFamily: FONTS.headingSemiBold },
+        headerStyle: { backgroundColor: COLORS.cream },
         headerTintColor: COLORS.textPrimary,
         headerLeft: () => (
           <Pressable onPress={() => router.replace('/')} hitSlop={8} style={{ paddingHorizontal: 12 }}>
-            <Text style={{ color: COLORS.accentText, fontWeight: '600' }}>Groups</Text>
+            <Text style={{ color: COLORS.textPrimary, fontFamily: FONTS.headingSemiBold }}>Groups</Text>
           </Pressable>
         ),
-        tabBarStyle: { backgroundColor: COLORS.surface },
-        tabBarActiveTintColor: COLORS.accentText,
+        tabBarStyle: { backgroundColor: COLORS.cream, borderTopWidth: 2, borderTopColor: COLORS.border, height: 68 },
+        tabBarLabelStyle: { fontFamily: FONTS.headingMedium, fontSize: 11 },
+        tabBarActiveTintColor: COLORS.textPrimary,
         tabBarInactiveTintColor: COLORS.textMuted,
       }}
     >
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen name="today" options={{ title: 'Today' }} />
-      <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
-      <Tabs.Screen name="garden" options={{ title: 'Garden' }} />
+      <Tabs.Screen
+        name="today"
+        options={{
+          title: 'Today',
+          tabBarIcon: ({ focused }) => <TabIcon glyph="▥" tint={COLORS.yellow} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: 'Feed',
+          tabBarIcon: ({ focused }) => <TabIcon glyph="≡" tint={COLORS.pink} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="garden"
+        options={{
+          title: 'Garden',
+          tabBarIcon: ({ focused }) => <TabIcon glyph="♧" tint={COLORS.sage} focused={focused} />,
+        }}
+      />
       <Tabs.Screen name="shop" options={{ href: null, title: 'Shop' }} />
     </Tabs>
   );
@@ -79,16 +127,16 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     ...buttonBase,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.sage,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   retryButtonText: {
-    color: COLORS.primaryText,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
   backLink: {
-    color: COLORS.accentText,
-    fontWeight: '600',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
 });

@@ -12,7 +12,8 @@ import {
   View,
 } from 'react-native';
 
-import { buttonBase, COLORS } from '../../../components/theme';
+import { Lamb } from '../../../components/pixel/Lamb';
+import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
 import { getChapterVerses } from '../../../lib/bible';
@@ -31,6 +32,7 @@ import {
 import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
+import { getLambMood } from '../../../lib/lamb-mood';
 
 function todayAsInputDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -216,26 +218,46 @@ export default function TodayScreen() {
     );
   }
 
+  const hasCheckedInToday = checkedChapters.has(todayChapter);
+  const lambMood = getLambMood(hasCheckedInToday);
+  const lambCaption =
+    lambMood === 'sleeping'
+      ? 'The lamb is asleep.'
+      : lambMood === 'waiting'
+        ? 'The lamb is waiting by your tree.'
+        : 'The lamb is happy you read today.';
+
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
-      <Text style={styles.reference}>
-        {group.book} {selectedChapter}
-      </Text>
-
-      {loading ? (
-        <ActivityIndicator style={styles.versesLoading} />
-      ) : (
-        <View style={styles.verses}>
-          {verses.map((verse, index) => (
-            <Text key={index} style={styles.verseText}>
-              <Text style={styles.verseNumber}>{index + 1} </Text>
-              {verse}
-            </Text>
-          ))}
+      <View style={styles.chapterCard}>
+        <View style={styles.chapterHeading}>
+          <Text style={styles.chapterHeadingLabel}>Today&apos;s chapter</Text>
+          <Text style={styles.kjvBadge}>KJV</Text>
         </View>
-      )}
+        <Text style={styles.reference}>
+          {group.book} {selectedChapter}
+        </Text>
+
+        {loading ? (
+          <ActivityIndicator style={styles.versesLoading} />
+        ) : (
+          <View style={styles.verses}>
+            {verses.map((verse, index) => (
+              <Text key={index} style={styles.verseText}>
+                <Text style={styles.verseNumber}>{index + 1} </Text>
+                {verse}
+              </Text>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.lambNudge}>
+        <Lamb mood={lambMood} pixelSize={2} />
+        <Text style={styles.lambNudgeText}>{lambCaption}</Text>
+      </View>
 
       {!loading && !currentCheckin && (
         <View style={styles.checkInSection}>
@@ -325,9 +347,40 @@ const styles = StyleSheet.create({
   error: {
     color: COLORS.error,
   },
+  chapterCard: {
+    ...buttonBase,
+    backgroundColor: COLORS.white,
+    padding: 16,
+  },
+  chapterHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chapterHeadingLabel: {
+    fontFamily: FONTS.heading,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: COLORS.textMuted,
+  },
+  kjvBadge: {
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 11,
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.yellow,
+    overflow: 'hidden',
+  },
   reference: {
+    marginTop: 10,
+    marginBottom: 10,
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
   },
   versesLoading: {
@@ -339,33 +392,44 @@ const styles = StyleSheet.create({
   },
   verses: {
     gap: 6,
-    backgroundColor: COLORS.surface,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    padding: 14,
   },
   verseText: {
-    fontSize: 17,
-    lineHeight: 26,
-    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' }),
+    fontSize: 16,
+    lineHeight: 25,
+    fontFamily: FONTS.serif,
     color: COLORS.textPrimary,
   },
   verseNumber: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.textMuted,
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.sageDark,
+  },
+  lambNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lambNudgeText: {
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: COLORS.white,
+    fontFamily: FONTS.serif,
+    fontSize: 12,
+    color: COLORS.textPrimary,
   },
   button: {
     ...buttonBase,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.sage,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: COLORS.primaryText,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
   checkInSection: {
     gap: 8,
@@ -376,11 +440,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   doneLabel: {
-    fontWeight: '600',
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.success,
   },
   label: {
-    fontWeight: '600',
+    fontFamily: FONTS.headingMedium,
+    fontSize: 13,
     marginTop: 8,
     color: COLORS.textPrimary,
   },
@@ -391,20 +456,21 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 60,
     textAlignVertical: 'top',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
+    fontFamily: FONTS.serif,
     color: COLORS.textPrimary,
   },
   secondaryButton: {
     borderWidth: 2,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceAccent,
+    backgroundColor: COLORS.cream,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: COLORS.accentText,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
   photo: {
     width: '100%',
@@ -425,16 +491,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
   },
   chipSelected: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.lavender,
   },
   chipText: {
+    fontFamily: FONTS.headingMedium,
+    fontSize: 12,
     color: COLORS.textPrimary,
   },
   chipTextSelected: {
-    color: COLORS.accentText,
-    fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
 });

@@ -1,24 +1,51 @@
-// Shared pastel-garden UI colors and the chunky "pixel button" treatment
-// (black border + hard offset shadow, no blur) from the art direction brief.
+// Shared UI colors and type styles, matching the "Sprout" garden look
+// (warm cream/sage/pink pastels, thick borders, hard offset shadows).
 
 export const COLORS = {
-  background: '#F6F1E4',
-  gardenBackground: '#E6F3EA',
-  surface: '#FFFBF3',
-  surfaceAccent: '#FBEAEF',
-  primary: '#B9E4C0',
-  primaryText: '#2E4B36',
-  accent: '#F3C6D3',
-  accentText: '#5C2E3A',
-  border: '#000000',
-  textPrimary: '#3A332B',
-  textMuted: '#8A8074',
-  error: '#D9776A',
-  success: '#4F8A5F',
+  // Figma-style base palette
+  ink: '#4A3F35',
+  cream: '#FFF9F0',
+  sage: '#A8D69A',
+  sageDark: '#7FC28E',
+  grass: '#C8E6B5',
+  pink: '#F6B8B8',
+  lavender: '#D9C8F0',
+  yellow: '#FFE9A8',
+  water: '#CDEBF7',
+  waterDark: '#A8D8EE',
+  sky: '#EAF6FB',
+  bark: '#D4B08C',
+  white: '#FFFFFF',
+
+  // App-wide aliases used across screens
+  background: '#FFF9F0',
+  gardenBackground: '#EAF6FB',
+  surface: '#FFFFFF',
+  surfaceAccent: '#FFF9F0',
+  primary: '#A8D69A',
+  primaryText: '#4A3F35',
+  accent: '#F6B8B8',
+  accentText: '#4A3F35',
+  border: '#4A3F35',
+  textPrimary: '#4A3F35',
+  textMuted: '#7B7066',
+  error: '#C1554A',
+  success: '#5FA06B',
+} as const;
+
+export const FONTS = {
+  heading: 'PixelifySans_700Bold',
+  headingSemiBold: 'PixelifySans_600SemiBold',
+  headingMedium: 'PixelifySans_500Medium',
+  headingRegular: 'PixelifySans_400Regular',
+  serif: 'Literata_400Regular',
+  serifMedium: 'Literata_500Medium',
+  serifSemiBold: 'Literata_600SemiBold',
+  serifItalic: 'Literata_400Regular_Italic',
 } as const;
 
 export const HARD_SHADOW = {
-  shadowColor: '#000',
+  shadowColor: 'rgba(74, 63, 53, 0.8)',
   shadowOffset: { width: 3, height: 3 },
   shadowOpacity: 1,
   shadowRadius: 0,

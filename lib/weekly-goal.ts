@@ -5,6 +5,7 @@ export type WeeklyGoalSummary = {
   combinedTarget: number;
   percent: number;
   meetsHarvestThreshold: boolean;
+  memberCount: number;
 };
 
 const HARVEST_THRESHOLD_PERCENT = 80;
@@ -50,5 +51,6 @@ export async function getWeeklyGoalSummary(groupId: string, weeklyTarget: number
     combinedTarget,
     percent,
     meetsHarvestThreshold: percent >= HARVEST_THRESHOLD_PERCENT,
+    memberCount,
   };
 }

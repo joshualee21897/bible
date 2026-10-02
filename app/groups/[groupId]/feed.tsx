@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { Tree } from '../../../components/pixel/Tree';
-import { COLORS } from '../../../components/theme';
+import { COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import {
   getGroupFeed,
   getGroupMembersWithCheckinCounts,
@@ -62,6 +62,10 @@ export default function GroupFeedScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Feed</Text>
+        <Text style={styles.subtitle}>Small steps, shared together.</Text>
+      </View>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
       <FlatList
         data={feed ?? []}
@@ -82,19 +86,23 @@ export default function GroupFeedScreen() {
           return (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Tree stage={stage} pixelSize={2} />
+                <View style={styles.treeBadge}>
+                  <Tree stage={stage} pixelSize={1.6} />
+                </View>
                 <View style={styles.nameColumn}>
                   <Text style={styles.name}>{item.profiles?.display_name ?? 'Someone'}</Text>
-                  <Text style={styles.stageLabel}>{getTreeStageLabel(stage)}</Text>
+                  <Text style={styles.chapter}>
+                    Read {item.book} {item.chapter} <Text style={styles.stageLabel}>· {getTreeStageLabel(stage)}</Text>
+                  </Text>
                 </View>
-                <Text style={styles.chapter}>
-                  {item.book} {item.chapter}
-                </Text>
+                <View style={styles.readCheck}>
+                  <Text style={styles.readCheckGlyph}>✓</Text>
+                </View>
               </View>
-              {item.reflection && <Text style={styles.reflection}>{item.reflection}</Text>}
               {item.photo_path && photoUrls[item.id] && (
                 <Image source={{ uri: photoUrls[item.id] }} style={styles.photo} />
               )}
+              {item.reflection && <Text style={styles.reflection}>"{item.reflection}"</Text>}
             </View>
           );
         }}
@@ -115,6 +123,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  header: {
+    marginBottom: 14,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: FONTS.heading,
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    marginTop: 2,
+    fontFamily: FONTS.serif,
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
   error: {
     color: COLORS.error,
     marginBottom: 8,
@@ -125,43 +147,77 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
     marginTop: 40,
   },
   card: {
+    ...HARD_SHADOW,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderRadius: 10,
     padding: 12,
     gap: 8,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  treeBadge: {
+    width: 36,
+    height: 36,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    backgroundColor: COLORS.sky,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   nameColumn: {
     flex: 1,
   },
   name: {
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
   stageLabel: {
-    fontSize: 12,
     color: COLORS.textMuted,
   },
   chapter: {
+    marginTop: 2,
+    fontFamily: FONTS.serif,
+    fontSize: 12,
     color: COLORS.textMuted,
   },
+  readCheck: {
+    width: 25,
+    height: 25,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    backgroundColor: COLORS.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readCheckGlyph: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 12,
+    color: COLORS.textPrimary,
+  },
   reflection: {
-    fontSize: 15,
+    fontFamily: FONTS.serifItalic,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
   photo: {
     width: '100%',
     aspectRatio: 4 / 3,
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
 });

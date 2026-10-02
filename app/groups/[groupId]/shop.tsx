@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
-import { buttonBase, COLORS } from '../../../components/theme';
+import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { useAuth } from '../../../lib/auth-context';
 import { buyGardenItem, getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
@@ -12,6 +12,14 @@ import { useGroup } from '../../../lib/group-context';
 
 type CategoryFilter = 'all' | GardenItemKind;
 type OwnedFilter = 'all' | 'owned' | 'unowned';
+
+const CARD_TINTS = ['#EFF8EC', '#FFF2F2', '#F7F1FF', '#FFFAE8', '#EFFAFF'];
+
+function tintForItem(key: string): string {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return CARD_TINTS[hash % CARD_TINTS.length];
+}
 
 export default function ShopScreen() {
   const { group } = useGroup();
@@ -101,10 +109,17 @@ export default function ShopScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Shop</Text>
+        <View>
+          <Text style={styles.title}>Garden shop</Text>
+          <Text style={styles.subtitle}>Little gifts for our shared space.</Text>
+        </View>
         <View style={styles.balanceBadge}>
           <Text style={styles.balanceText}>💧 {drops.balance}</Text>
         </View>
+      </View>
+
+      <View style={styles.shopNote}>
+        <Text style={styles.shopNoteText}>▤ Drops are shared by our whole group.</Text>
       </View>
 
       <View style={styles.filterRow}>
@@ -146,8 +161,15 @@ export default function ShopScreen() {
           const isOwned = owned.has(item.key);
           const canAfford = drops.balance >= item.price;
           return (
-            <View style={styles.card}>
-              <GardenItemSprite itemKey={item.key} pixelSize={3} />
+            <View style={[styles.card, { backgroundColor: tintForItem(item.key) }]}>
+              {isOwned && (
+                <View style={styles.ownedCheck}>
+                  <Text style={styles.ownedCheckGlyph}>✓</Text>
+                </View>
+              )}
+              <View style={styles.itemSpriteBox}>
+                <GardenItemSprite itemKey={item.key} pixelSize={2.4} />
+              </View>
               <Text style={styles.itemName}>{item.name}</Text>
               {isOwned && item.verse && <Text style={styles.verse}>{item.verse}</Text>}
               {!isOwned && <Text style={styles.price}>{item.price} drops</Text>}
@@ -191,25 +213,47 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
   },
+  subtitle: {
+    marginTop: 2,
+    fontFamily: FONTS.serif,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
   balanceBadge: {
+    ...HARD_SHADOW,
     borderWidth: 2,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.water,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   balanceText: {
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
+  },
+  shopNote: {
+    marginBottom: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.sageDark,
+    borderStyle: 'dashed',
+    borderRadius: 6,
+    backgroundColor: '#EDF8FA',
+  },
+  shopNoteText: {
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
   },
   filterRow: {
     flexDirection: 'row',
@@ -222,18 +266,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
   },
   filterChipSelected: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.sage,
   },
   filterChipText: {
+    fontFamily: FONTS.headingMedium,
     color: COLORS.textPrimary,
-    fontSize: 13,
+    fontSize: 12,
   },
   filterChipTextSelected: {
-    color: COLORS.accentText,
-    fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   list: {
     gap: 10,
@@ -245,6 +289,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
     marginTop: 40,
   },
@@ -256,43 +301,76 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 10,
     padding: 12,
-    backgroundColor: COLORS.surface,
+    position: 'relative',
+    ...HARD_SHADOW,
+  },
+  itemSpriteBox: {
+    width: 56,
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  ownedCheck: {
+    position: 'absolute',
+    top: -8,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    backgroundColor: COLORS.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  ownedCheckGlyph: {
+    fontSize: 11,
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
   itemName: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
     color: COLORS.textPrimary,
     textAlign: 'center',
   },
   verse: {
+    fontFamily: FONTS.serif,
     color: COLORS.success,
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
   },
   price: {
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
     fontSize: 12,
   },
   ownedLabel: {
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.success,
-    fontWeight: '600',
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 4,
   },
   buyButton: {
     ...buttonBase,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.sage,
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginTop: 4,
   },
   buyButtonDisabled: {
-    backgroundColor: COLORS.surfaceAccent,
+    backgroundColor: COLORS.cream,
     opacity: 0.6,
   },
   buyButtonText: {
-    color: COLORS.primaryText,
-    fontWeight: 'bold',
-    fontSize: 13,
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+    fontSize: 12,
   },
 });

@@ -6,7 +6,7 @@ import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
 import { Tree } from '../../../components/pixel/Tree';
-import { buttonBase, COLORS } from '../../../components/theme';
+import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { confirmAction, showAlert } from '../../../lib/alert';
 import { getChapterCount } from '../../../lib/bible-books';
 import { useAuth } from '../../../lib/auth-context';
@@ -123,18 +123,26 @@ export default function GroupGardenScreen() {
     >
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
-      <View style={styles.topRow}>
-        <Text style={styles.balance}>💧 {drops.balance} drops</Text>
-        <Pressable style={styles.shopButton} onPress={() => router.push(`/groups/${group.id}/shop`)}>
-          <Text style={styles.shopButtonText}>Shop</Text>
-        </Pressable>
-      </View>
+      <View style={styles.headerCard}>
+        <View style={styles.topRow}>
+          <View>
+            <Text style={styles.title}>Our garden</Text>
+            <Text style={styles.subtitle}>{group.name}</Text>
+          </View>
+          <View style={styles.balanceBadge}>
+            <Text style={styles.balance}>💧 {drops.balance}</Text>
+          </View>
+        </View>
 
-      <View style={styles.goalCard}>
-        <Text style={styles.goalLabel}>
-          This week: {weeklyGoal.daysRead} of {weeklyGoal.combinedTarget} reading-days
-        </Text>
-        <ProgressBar percent={weeklyGoal.percent} />
+        <View style={styles.goalCard}>
+          <View style={styles.goalCardTop}>
+            <Text style={styles.goalLabel}>This week</Text>
+            <Text style={styles.goalValue}>
+              {weeklyGoal.daysRead} / {weeklyGoal.combinedTarget} reads
+            </Text>
+          </View>
+          <ProgressBar percent={weeklyGoal.percent} />
+        </View>
       </View>
 
       {weeklyGoal.meetsHarvestThreshold && (
@@ -144,27 +152,48 @@ export default function GroupGardenScreen() {
         </View>
       )}
 
-      <View style={styles.lambRow}>
-        <Lamb mood={lambMood} pixelSize={5} />
-        <Text style={styles.lambCaption}>
-          {lambMood === 'sleeping' && 'The lamb is asleep.'}
-          {lambMood === 'waiting' && 'The lamb is waiting by your tree.'}
-          {lambMood === 'happy' && 'The lamb is happy to see our garden.'}
-        </Text>
+      <View style={styles.scene}>
+        <View style={styles.sceneSky} />
+        <View style={styles.sceneGrass} />
+        <View style={[styles.cloud, styles.cloudOne]} />
+        <View style={[styles.cloud, styles.cloudTwo]} />
+        <View style={styles.sun} />
+        <View style={styles.flowerOne}>
+          <Text style={styles.flowerGlyph}>✦</Text>
+        </View>
+        <View style={styles.flowerTwo}>
+          <Text style={styles.flowerGlyph}>✦</Text>
+        </View>
+
+        <View style={styles.lambRow}>
+          <Lamb mood={lambMood} pixelSize={3} />
+          <Text style={styles.lambCaption}>
+            {lambMood === 'sleeping' && 'The lamb is asleep.'}
+            {lambMood === 'waiting' && 'The lamb is waiting by your tree.'}
+            {lambMood === 'happy' && 'The lamb is happy to see our garden.'}
+          </Text>
+        </View>
+
+        <View style={styles.grove}>
+          {members.map((member) => {
+            const stage = getTreeStage(member.checkin_count);
+            const resting = isTreeResting(member.last_checkin_at, member.checkin_count);
+            return (
+              <View key={member.user_id} style={styles.treeSlot}>
+                <Tree stage={stage} resting={resting} pixelSize={3} />
+                <Text style={styles.memberName}>{member.display_name}</Text>
+                <Text style={styles.stageLabel}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
 
-      <View style={styles.grove}>
-        {members.map((member) => {
-          const stage = getTreeStage(member.checkin_count);
-          const resting = isTreeResting(member.last_checkin_at, member.checkin_count);
-          return (
-            <View key={member.user_id} style={styles.treeSlot}>
-              <Tree stage={stage} resting={resting} pixelSize={4} />
-              <Text style={styles.memberName}>{member.display_name}</Text>
-              <Text style={styles.stageLabel}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
-            </View>
-          );
-        })}
+      <View style={styles.caption}>
+        <Text style={styles.captionGlyph}>♧</Text>
+        <Text style={styles.captionBody}>
+          Our garden grows with every chapter.{'\n'}Resting trees are always welcome here.
+        </Text>
       </View>
 
       {ownedItemKeys.length > 0 && (
@@ -178,6 +207,10 @@ export default function GroupGardenScreen() {
         </View>
       )}
 
+      <Pressable style={styles.shopButton} onPress={() => router.push(`/groups/${group.id}/shop`)}>
+        <Text style={styles.shopButtonText}>▤ Visit the shop</Text>
+      </Pressable>
+
       <Pressable onPress={handleLeaveGroup}>
         <Text style={styles.leaveLink}>Leave group</Text>
       </Pressable>
@@ -189,13 +222,13 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     alignItems: 'center',
-    backgroundColor: COLORS.gardenBackground,
+    backgroundColor: COLORS.sky,
     flexGrow: 1,
     gap: 14,
   },
   center: {
     flex: 1,
-    backgroundColor: COLORS.gardenBackground,
+    backgroundColor: COLORS.sky,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
@@ -207,85 +240,224 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     ...buttonBase,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.sage,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   retryButtonText: {
-    color: COLORS.primaryText,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  headerCard: {
+    ...buttonBase,
+    width: '100%',
+    backgroundColor: COLORS.white,
+    padding: 14,
+    gap: 12,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     width: '100%',
   },
+  title: {
+    fontSize: 20,
+    fontFamily: FONTS.heading,
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    marginTop: 2,
+    fontFamily: FONTS.serif,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  balanceBadge: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    backgroundColor: COLORS.water,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    ...HARD_SHADOW,
+  },
   balance: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
   shopButton: {
     ...buttonBase,
-    backgroundColor: COLORS.accent,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    width: '100%',
+    backgroundColor: COLORS.pink,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
   shopButtonText: {
-    color: COLORS.accentText,
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
   },
   goalCard: {
     width: '100%',
     gap: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    padding: 10,
+    backgroundColor: COLORS.cream,
+  },
+  goalCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
   },
   goalLabel: {
-    fontWeight: '600',
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  goalValue: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
     color: COLORS.textPrimary,
   },
   harvestCard: {
     width: '100%',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderRadius: 10,
     padding: 12,
     gap: 4,
+    ...HARD_SHADOW,
   },
   harvestTitle: {
-    fontWeight: 'bold',
+    fontFamily: FONTS.headingSemiBold,
     fontSize: 16,
     color: COLORS.textPrimary,
   },
   harvestBody: {
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
+  },
+  scene: {
+    width: '100%',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+    paddingTop: 20,
+    paddingBottom: 16,
+    paddingHorizontal: 12,
+    minHeight: 260,
+    ...HARD_SHADOW,
+  },
+  sceneSky: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
+    backgroundColor: COLORS.sky,
+  },
+  sceneGrass: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    backgroundColor: COLORS.grass,
+  },
+  cloud: {
+    position: 'absolute',
+    width: 40,
+    height: 13,
+    borderRadius: 4,
+    backgroundColor: COLORS.white,
+  },
+  cloudOne: {
+    top: 16,
+    left: 20,
+  },
+  cloudTwo: {
+    top: 34,
+    right: 24,
+    width: 28,
+    height: 10,
+  },
+  sun: {
+    position: 'absolute',
+    top: 14,
+    right: 70,
+    width: 26,
+    height: 26,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.yellow,
+  },
+  flowerOne: {
+    position: 'absolute',
+    right: 30,
+    bottom: 22,
+  },
+  flowerTwo: {
+    position: 'absolute',
+    left: 40,
+    bottom: 34,
+  },
+  flowerGlyph: {
+    fontSize: 16,
+    color: '#D77F86',
   },
   lambRow: {
     alignItems: 'center',
     gap: 4,
+    marginBottom: 8,
   },
   lambCaption: {
+    fontFamily: FONTS.serif,
+    fontSize: 12,
     color: COLORS.textMuted,
   },
   grove: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 16,
+    gap: 12,
   },
   treeSlot: {
     alignItems: 'center',
-    width: 140,
+    width: 90,
   },
   memberName: {
-    marginTop: 6,
-    fontWeight: 'bold',
+    marginTop: 4,
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 12,
     color: COLORS.textPrimary,
   },
   stageLabel: {
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
+    fontSize: 11,
+  },
+  caption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  captionGlyph: {
+    fontFamily: FONTS.heading,
+    color: COLORS.sageDark,
+  },
+  captionBody: {
+    flex: 1,
+    fontFamily: FONTS.serif,
     fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.textMuted,
+    textAlign: 'center',
   },
   itemsRow: {
     flexDirection: 'row',
@@ -300,13 +472,16 @@ const styles = StyleSheet.create({
   },
   itemName: {
     marginTop: 4,
+    fontFamily: FONTS.serif,
     fontSize: 12,
     color: COLORS.textMuted,
     textAlign: 'center',
   },
   leaveLink: {
+    fontFamily: FONTS.serif,
     color: COLORS.textMuted,
     textDecorationLine: 'underline',
-    marginTop: 12,
+    marginTop: 4,
+    marginBottom: 12,
   },
 });
