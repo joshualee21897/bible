@@ -339,6 +339,7 @@ export default function BibleScreen() {
 
 const styles = StyleSheet.create({
   scrollView: {
+    flex: 1,
     backgroundColor: COLORS.background,
   },
   container: {
