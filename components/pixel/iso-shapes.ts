@@ -1,14 +1,13 @@
-// Preview-only polygon helpers for drawing isometric-looking shapes
-// (a diamond "top" plus straight-down "walls") inside a plain pixel grid.
-// The isometric look comes entirely from how the points are placed —
-// this still renders through the same flat grid-of-squares approach.
-import type { PreviewPaletteKey } from './preview-palette';
-import type { PreviewGridData } from './preview-types';
+// Helpers for drawing isometric-looking shapes (a diamond "top" plus
+// straight-down "walls") inside a plain pixel grid. The isometric look comes
+// entirely from how the points are placed — this still renders through the
+// same flat grid-of-squares approach as every other sprite.
+import type { PaletteKey, PixelGridData } from './types';
 
 export type Point = [number, number];
 
-export function emptyGrid(width: number, height: number): PreviewGridData {
-  return Array.from({ length: height }, () => Array<PreviewPaletteKey | null>(width).fill(null));
+export function emptyGrid(width: number, height: number): PixelGridData {
+  return Array.from({ length: height }, () => Array<PaletteKey | null>(width).fill(null));
 }
 
 function pointInPolygon(x: number, y: number, poly: Point[]): boolean {
@@ -22,7 +21,7 @@ function pointInPolygon(x: number, y: number, poly: Point[]): boolean {
   return inside;
 }
 
-export function paintPolygon(grid: PreviewGridData, poly: Point[], fill: PreviewPaletteKey) {
+export function paintPolygon(grid: PixelGridData, poly: Point[], fill: PaletteKey) {
   const xs = poly.map((p) => p[0]);
   const ys = poly.map((p) => p[1]);
   const minX = Math.max(0, Math.floor(Math.min(...xs)));
@@ -36,7 +35,7 @@ export function paintPolygon(grid: PreviewGridData, poly: Point[], fill: Preview
   }
 }
 
-function drawLine(grid: PreviewGridData, x0: number, y0: number, x1: number, y1: number, color: PreviewPaletteKey) {
+function drawLine(grid: PixelGridData, x0: number, y0: number, x1: number, y1: number, color: PaletteKey) {
   let cx = Math.round(x0);
   let cy = Math.round(y0);
   const ex = Math.round(x1);
@@ -61,7 +60,7 @@ function drawLine(grid: PreviewGridData, x0: number, y0: number, x1: number, y1:
   }
 }
 
-export function strokePolygon(grid: PreviewGridData, poly: Point[], color: PreviewPaletteKey) {
+export function strokePolygon(grid: PixelGridData, poly: Point[], color: PaletteKey) {
   for (let i = 0; i < poly.length; i++) {
     const [x0, y0] = poly[i];
     const [x1, y1] = poly[(i + 1) % poly.length];
@@ -69,7 +68,7 @@ export function strokePolygon(grid: PreviewGridData, poly: Point[], color: Previ
   }
 }
 
-export function setPixel(grid: PreviewGridData, x: number, y: number, color: PreviewPaletteKey) {
+export function setPixel(grid: PixelGridData, x: number, y: number, color: PaletteKey) {
   if (y >= 0 && y < grid.length && x >= 0 && x < grid[0].length) {
     grid[y][x] = color;
   }

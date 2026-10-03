@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
+import { buildIsoGround } from '../../../components/pixel/iso-ground';
 import { Lamb } from '../../../components/pixel/Lamb';
+import { PixelGrid } from '../../../components/pixel/PixelGrid';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
 import { Tree } from '../../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
@@ -32,6 +34,10 @@ export default function GroupGardenScreen() {
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const totalSlots = (members?.length ?? 0) + 1;
+  const ground = useMemo(() => buildIsoGround(totalSlots), [totalSlots]);
+  const GROUND_PIXEL_SIZE = 2;
 
   const load = useCallback(async () => {
     if (!group) return;
@@ -186,40 +192,61 @@ export default function GroupGardenScreen() {
       )}
 
       <View style={styles.scene}>
-        <View style={styles.sceneSky} />
-        <View style={styles.sceneGrass} />
-        <View style={[styles.cloud, styles.cloudOne]} />
-        <View style={[styles.cloud, styles.cloudTwo]} />
-        <View style={styles.sun} />
-        <View style={styles.flowerOne}>
-          <Text style={styles.flowerGlyph}>✦</Text>
-        </View>
-        <View style={styles.flowerTwo}>
-          <Text style={styles.flowerGlyph}>✦</Text>
-        </View>
+        {members.length > 2 && <Text style={styles.swipeHint}>Swipe to see everyone →</Text>}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={members.length > 2}
+          contentContainerStyle={{ width: ground.layout.width * GROUND_PIXEL_SIZE }}
+        >
+          <View style={[styles.groundStage, { width: ground.layout.width * GROUND_PIXEL_SIZE, height: ground.layout.height * GROUND_PIXEL_SIZE }]}>
+            <PixelGrid grid={ground.grid} pixelSize={GROUND_PIXEL_SIZE} />
 
-        <View style={styles.grove}>
-          {members.map((member) => {
-            const stage = getTreeStage(member.checkin_count);
-            const resting = isTreeResting(member.last_checkin_at, member.checkin_count);
-            return (
-              <View key={member.user_id} style={styles.treeSlot}>
-                <Tree stage={stage} resting={resting} pixelSize={3} />
-                <Text style={styles.memberName}>{member.display_name}</Text>
-                <Text style={styles.stageLabel}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
-              </View>
-            );
-          })}
-          <View style={styles.lambSlot}>
-            <Lamb mood={lambMood} pixelSize={3} />
+            {members.map((member, index) => {
+              const stage = getTreeStage(member.checkin_count);
+              const resting = isTreeResting(member.last_checkin_at, member.checkin_count);
+              const anchorX = ground.layout.slotX(index, totalSlots) * GROUND_PIXEL_SIZE;
+              const anchorY = ground.layout.slotY * GROUND_PIXEL_SIZE;
+              const spriteSize = 32 * GROUND_PIXEL_SIZE;
+              return (
+                <View
+                  key={member.user_id}
+                  style={{ position: 'absolute', left: anchorX - spriteSize / 2, top: anchorY - spriteSize, width: spriteSize }}
+                >
+                  <Tree stage={stage} resting={resting} pixelSize={GROUND_PIXEL_SIZE} showGround={false} />
+                </View>
+              );
+            })}
+
+            {(() => {
+              const anchorX = ground.layout.slotX(members.length, totalSlots) * GROUND_PIXEL_SIZE;
+              const anchorY = ground.layout.slotY * GROUND_PIXEL_SIZE;
+              return (
+                <View style={{ position: 'absolute', left: anchorX - 12 * GROUND_PIXEL_SIZE, top: anchorY - 21 * GROUND_PIXEL_SIZE }}>
+                  <Lamb mood={lambMood} pixelSize={GROUND_PIXEL_SIZE} />
+                </View>
+              );
+            })()}
           </View>
-        </View>
+        </ScrollView>
 
         <Text style={styles.lambCaption}>
           {lambMood === 'sleeping' && 'The lamb is asleep.'}
           {lambMood === 'waiting' && 'The lamb is waiting by your tree.'}
           {lambMood === 'happy' && 'The lamb is happy to see our garden.'}
         </Text>
+      </View>
+
+      <View style={styles.nameRow}>
+        {members.map((member) => {
+          const stage = getTreeStage(member.checkin_count);
+          const resting = isTreeResting(member.last_checkin_at, member.checkin_count);
+          return (
+            <View key={member.user_id} style={styles.nameChip}>
+              <Text style={styles.memberName}>{member.display_name}</Text>
+              <Text style={styles.stageLabel}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
+            </View>
+          );
+        })}
       </View>
 
       <View style={styles.caption}>
@@ -419,94 +446,44 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 10,
     overflow: 'hidden',
-    position: 'relative',
-    paddingTop: 20,
-    paddingBottom: 16,
-    paddingHorizontal: 12,
-    minHeight: 260,
+    backgroundColor: COLORS.sky,
+    paddingVertical: 10,
     ...HARD_SHADOW,
   },
-  sceneSky: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '55%',
-    backgroundColor: COLORS.sky,
+  groundStage: {
+    position: 'relative',
   },
-  sceneGrass: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '45%',
-    backgroundColor: COLORS.grass,
-  },
-  cloud: {
-    position: 'absolute',
-    width: 40,
-    height: 13,
-    borderRadius: 4,
-    backgroundColor: COLORS.white,
-  },
-  cloudOne: {
-    top: 16,
-    left: 20,
-  },
-  cloudTwo: {
-    top: 34,
-    right: 24,
-    width: 28,
-    height: 10,
-  },
-  sun: {
-    position: 'absolute',
-    top: 14,
-    right: 70,
-    width: 26,
-    height: 26,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.yellow,
-  },
-  flowerOne: {
-    position: 'absolute',
-    right: 30,
-    bottom: 22,
-  },
-  flowerTwo: {
-    position: 'absolute',
-    left: 40,
-    bottom: 34,
-  },
-  flowerGlyph: {
-    fontSize: 16,
-    color: '#D77F86',
+  swipeHint: {
+    textAlign: 'center',
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginBottom: 4,
   },
   lambCaption: {
-    marginTop: 10,
+    marginTop: 8,
     textAlign: 'center',
     fontFamily: FONTS.serif,
     fontSize: 12,
     color: COLORS.textMuted,
   },
-  grove: {
+  nameRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'flex-end',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
+    width: '100%',
   },
-  treeSlot: {
+  nameChip: {
     alignItems: 'center',
-    width: 90,
-  },
-  lambSlot: {
-    alignItems: 'center',
-    width: 70,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: COLORS.white,
   },
   memberName: {
-    marginTop: 4,
     fontFamily: FONTS.headingSemiBold,
     fontSize: 12,
     color: COLORS.textPrimary,

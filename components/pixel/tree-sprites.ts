@@ -14,7 +14,7 @@ function paintGround(grid: PixelGridData, resting: boolean) {
   }
 }
 
-export function buildTreeGrid(stage: TreeStage, resting = false): PixelGridData {
+export function buildTreeGrid(stage: TreeStage, resting = false, showGround = true): PixelGridData {
   const g = createFlatGrid(SIZE, SIZE);
   const cx = SIZE / 2;
   const bark = resting ? 'barkResting' : 'bark';
@@ -45,7 +45,7 @@ export function buildTreeGrid(stage: TreeStage, resting = false): PixelGridData 
   }
 
   const grid = finalizeFlatGrid(g);
-  paintGround(grid, resting);
+  if (showGround) paintGround(grid, resting);
 
   if (stage === 'fruiting') {
     const fruitSpots: [number, number][] = [
