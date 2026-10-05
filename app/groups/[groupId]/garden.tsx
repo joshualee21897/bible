@@ -26,9 +26,8 @@ import { confirmAction, showAlert } from '../../../lib/alert';
 import { getChapterCount } from '../../../lib/bible-books';
 import { useAuth } from '../../../lib/auth-context';
 import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyCheckedChapters, type MemberWithStats } from '../../../lib/checkins';
-import { getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
+import { getDropsSummary, getGroupItems, type DropsSummary } from '../../../lib/drops';
 import { getErrorMessage } from '../../../lib/error-message';
-import { getGardenItem } from '../../../lib/garden-items';
 import { leaveGroup } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
 import { getLambMood } from '../../../lib/lamb-mood';
@@ -77,14 +76,14 @@ export default function GroupGardenScreen() {
       const [stats, dropsSummary, owned, goalSummary, checkedChapters] = await Promise.all([
         getGroupMembersWithCheckinCounts(group.id),
         getDropsSummary(),
-        getOwnedItemKeys(group.id),
+        getGroupItems(group.id),
         getWeeklyGoalSummary(group.id, group.weekly_target),
         getMyCheckedChapters(group.id, group.book),
       ]);
 
       setMembers(stats);
       setDrops(dropsSummary);
-      setOwnedItemKeys([...owned]);
+      setOwnedItemKeys(owned);
       setWeeklyGoal(goalSummary);
       setHasCheckedInToday(checkedChapters.has(todayChapter));
       setErrorMessage(null);
@@ -160,8 +159,14 @@ export default function GroupGardenScreen() {
   type Slot =
     | { kind: 'member'; member: MemberWithStats }
     | { kind: 'lamb' }
-    | { kind: 'item'; itemKey: string };
-  const itemSlots: Slot[] = ownedItemKeys.map((itemKey): Slot => ({ kind: 'item', itemKey }));
+    | { kind: 'item'; itemKey: string; instanceKey: string };
+  // The same item key can appear more than once (several people can each
+  // buy their own lion), so each purchase needs its own React key.
+  const itemSlots: Slot[] = ownedItemKeys.map((itemKey, index): Slot => ({
+    kind: 'item',
+    itemKey,
+    instanceKey: `${itemKey}-${index}`,
+  }));
   const memberSlots: Slot[] = [
     ...members.map((member): Slot => ({ kind: 'member', member })),
     { kind: 'lamb' },
@@ -199,13 +204,8 @@ export default function GroupGardenScreen() {
       );
     }
     return (
-      <View key={slot.itemKey} style={styles.gridCell}>
+      <View key={slot.instanceKey} style={styles.gridCell}>
         <GardenItemSprite itemKey={slot.itemKey} pixelSize={PIXEL_SIZE} />
-        <View style={styles.labelPill}>
-          <Text style={styles.labelStage} numberOfLines={1}>
-            {getGardenItem(slot.itemKey)?.name ?? slot.itemKey}
-          </Text>
-        </View>
       </View>
     );
   }
@@ -254,11 +254,9 @@ export default function GroupGardenScreen() {
             contentContainerStyle={styles.grid}
           >
             {itemSlots.map(renderSlot)}
-            {itemSlots.length > 0 && (
-              <View style={styles.fenceRow}>
-                <PixelGrid grid={fenceGrid} pixelSize={FENCE_HEIGHT / 20} />
-              </View>
-            )}
+            <View style={styles.fenceRow}>
+              <PixelGrid grid={fenceGrid} pixelSize={FENCE_HEIGHT / 20} />
+            </View>
             {memberSlots.map(renderSlot)}
           </ScrollView>
         </View>

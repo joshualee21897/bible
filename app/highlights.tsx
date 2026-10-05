@@ -20,7 +20,9 @@ function EntryRow({ entry }: { entry: AnnotationEntry }) {
         <Text style={styles.reference}>
           {entry.book} {entry.chapter}:{entry.verse}
         </Text>
-        {entry.highlighted && <View style={styles.highlightSwatch} />}
+        {entry.highlighted && (
+          <View style={[styles.highlightSwatch, { backgroundColor: entry.color ?? COLORS.yellow }]} />
+        )}
       </View>
       {entry.note && <Text style={styles.note}>{entry.note}</Text>}
       <Text style={styles.time}>{timeAgo(entry.updated_at)}</Text>
@@ -215,7 +217,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.yellow,
   },
   note: {
     fontFamily: FONTS.serifItalic,

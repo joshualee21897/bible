@@ -11,11 +11,21 @@ import { getChapterAnnotations, saveNote, setHighlight, type VerseAnnotation } f
 import { getChapterVerses } from '../../lib/bible';
 import { BIBLE_BOOKS, getChapterCount } from '../../lib/bible-books';
 import { getErrorMessage } from '../../lib/error-message';
+import { getLastRead, saveLastRead } from '../../lib/last-read';
+
+const HIGHLIGHT_COLORS = [
+  { key: 'yellow', color: COLORS.yellow },
+  { key: 'sage', color: COLORS.sage },
+  { key: 'pink', color: COLORS.pink },
+  { key: 'lavender', color: COLORS.lavender },
+  { key: 'water', color: COLORS.water },
+];
 
 export default function ReadScreen() {
   const params = useLocalSearchParams<{ book?: string; chapter?: string }>();
-  const [book, setBook] = useState(BIBLE_BOOKS[0].name);
-  const [chapter, setChapter] = useState(1);
+  const lastRead = getLastRead();
+  const [book, setBook] = useState(lastRead?.book ?? BIBLE_BOOKS[0].name);
+  const [chapter, setChapter] = useState(lastRead?.chapter ?? 1);
   const [annotations, setAnnotations] = useState<Map<number, VerseAnnotation>>(new Map());
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -23,6 +33,7 @@ export default function ReadScreen() {
   const [savingNote, setSavingNote] = useState(false);
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
+  const [activeColor, setActiveColor] = useState<string>(COLORS.yellow);
 
   const maxChapter = getChapterCount(book);
 
@@ -35,6 +46,12 @@ export default function ReadScreen() {
     setChapter(Number.isFinite(parsedChapter) && parsedChapter > 0 ? parsedChapter : 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.book, params.chapter]);
+
+  // Remembers the last book/chapter read, so refreshing or reopening the
+  // Read tab returns to the same spot instead of resetting to Genesis 1.
+  useEffect(() => {
+    saveLastRead(book, chapter);
+  }, [book, chapter]);
 
   const load = useCallback(async (b: string, c: number) => {
     setLoading(true);
@@ -62,19 +79,29 @@ export default function ReadScreen() {
   }, [book, chapter]);
 
   async function toggleHighlight(verse: number) {
-    const current = annotations.get(verse)?.highlighted ?? false;
+    const existing = annotations.get(verse);
+    const currentlyHighlighted = existing?.highlighted ?? false;
+    const currentColor = existing?.color ?? COLORS.yellow;
+
+    // Tapping an unhighlighted verse highlights it in the selected color.
+    // Tapping a verse already highlighted in that same color un-highlights
+    // it. Tapping it while a different color is selected just re-colors it.
+    const sameColor = currentlyHighlighted && currentColor === activeColor;
+    const nextHighlighted = !sameColor;
+    const nextColor = sameColor ? currentColor : activeColor;
+
     setAnnotations((prev) => {
       const next = new Map(prev);
-      next.set(verse, { highlighted: !current, note: prev.get(verse)?.note ?? null });
+      next.set(verse, { highlighted: nextHighlighted, note: prev.get(verse)?.note ?? null, color: nextColor });
       return next;
     });
     try {
-      await setHighlight(book, chapter, verse, !current);
+      await setHighlight(book, chapter, verse, nextHighlighted, nextColor);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
       setAnnotations((prev) => {
         const next = new Map(prev);
-        next.set(verse, { highlighted: current, note: prev.get(verse)?.note ?? null });
+        next.set(verse, { highlighted: currentlyHighlighted, note: prev.get(verse)?.note ?? null, color: currentColor });
         return next;
       });
     }
@@ -86,7 +113,11 @@ export default function ReadScreen() {
       await saveNote(book, chapter, verse, note);
       setAnnotations((prev) => {
         const next = new Map(prev);
-        next.set(verse, { highlighted: prev.get(verse)?.highlighted ?? false, note: note.trim() || null });
+        next.set(verse, {
+          highlighted: prev.get(verse)?.highlighted ?? false,
+          note: note.trim() || null,
+          color: prev.get(verse)?.color ?? null,
+        });
         return next;
       });
       setNoteSheet(null);
@@ -109,13 +140,28 @@ export default function ReadScreen() {
       <LambGuide
         id="read"
         message={[
-          'Tap a verse number to highlight it, or ✎ to add a note.',
+          'Tap a verse to highlight it, or ✎ to add a note.',
           'Your highlights and notes are just for you.',
           'Browse any book, any chapter, anytime.',
         ]}
         pose="pointing"
         style={styles.lambGuide}
       />
+
+      <View style={styles.colorRow}>
+        {HIGHLIGHT_COLORS.map(({ key, color }) => (
+          <Pressable
+            key={key}
+            style={[
+              styles.colorSwatch,
+              { backgroundColor: color },
+              activeColor === color && styles.colorSwatchSelected,
+            ]}
+            onPress={() => setActiveColor(color)}
+            hitSlop={4}
+          />
+        ))}
+      </View>
 
       <View style={styles.pickerRow}>
         <Pressable style={styles.bookPill} onPress={() => setBookSheetOpen(true)}>
@@ -157,12 +203,17 @@ export default function ReadScreen() {
             const annotation = annotations.get(verseNumber);
             return (
               <View key={verseNumber} style={styles.verseRow}>
-                <Pressable onPress={() => toggleHighlight(verseNumber)} hitSlop={6}>
-                  <Text style={styles.verseNumber}>{verseNumber}</Text>
+                <Text style={styles.verseNumber}>{verseNumber}</Text>
+                <Pressable style={styles.verseTextPressable} onPress={() => toggleHighlight(verseNumber)}>
+                  <Text
+                    style={[
+                      styles.verseText,
+                      annotation?.highlighted && { backgroundColor: annotation.color ?? COLORS.yellow },
+                    ]}
+                  >
+                    {verseText}
+                  </Text>
                 </Pressable>
-                <Text style={[styles.verseText, annotation?.highlighted && styles.verseTextHighlighted]}>
-                  {verseText}
-                </Text>
                 <Pressable onPress={() => setNoteSheet({ verse: verseNumber })} hitSlop={6}>
                   <Text style={[styles.noteGlyph, annotation?.note && styles.noteGlyphActive]}>✎</Text>
                 </Pressable>
@@ -240,6 +291,22 @@ const styles = StyleSheet.create({
   },
   lambGuide: {
     marginBottom: 12,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  colorSwatch: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  colorSwatchSelected: {
+    borderWidth: 3,
+    borderColor: COLORS.textPrimary,
   },
   pickerRow: {
     flexDirection: 'row',
@@ -330,15 +397,14 @@ const styles = StyleSheet.create({
     color: COLORS.sageDark,
     minWidth: 16,
   },
-  verseText: {
+  verseTextPressable: {
     flex: 1,
+  },
+  verseText: {
     fontSize: 16,
     lineHeight: 25,
     fontFamily: FONTS.serif,
     color: COLORS.textPrimary,
-  },
-  verseTextHighlighted: {
-    backgroundColor: COLORS.yellow,
   },
   noteGlyph: {
     marginTop: 3,

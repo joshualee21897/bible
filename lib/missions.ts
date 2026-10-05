@@ -11,6 +11,7 @@ import { startOfWeek } from './weekly-goal';
 
 export type MissionProgress = {
   key: string;
+  periodKey: string;
   section: MissionSection;
   title: string;
   verse: string;
@@ -18,7 +19,9 @@ export type MissionProgress = {
   reward: number;
   progress: number;
   target: number;
-  achieved: boolean;
+  // True once the mission's target is reached but the reward hasn't been
+  // collected yet — the Missions tab shows a Collect button for these.
+  readyToCollect: boolean;
   daysLeft?: number;
   repeatable?: boolean;
   timesEarned?: number;
@@ -31,7 +34,7 @@ export type MissionSummary = {
   bonusDropsEarned: number;
 };
 
-type CheckinRow = { group_id: string; book: string; chapter: number; reflection: string | null; kind: string; created_at: string };
+type CheckinRow = { group_id: string; book: string; chapter: number; reflection: string | null; created_at: string };
 
 const REST_DAYS_FOR_COMEBACK = 7;
 
@@ -131,30 +134,45 @@ async function getLargestGroupMemberCount(userId: string): Promise<number> {
   return Math.max(0, ...counts.values());
 }
 
+function weekPeriodKey(date: Date): string {
+  return `week:${startOfWeek(date).toISOString().slice(0, 10)}`;
+}
+
+function monthPeriodKey(date: Date): string {
+  return `month:${date.getFullYear()}-${date.getMonth()}`;
+}
+
 export async function getMissionSummary(): Promise<MissionSummary> {
   const userId = await requireUserId();
 
-  const [checkinsResult, prayersResult, reactionsResult, animalsResult, largestGroupMemberCount] = await Promise.all([
-    supabase.from('checkins').select('group_id, book, chapter, reflection, kind, created_at').eq('user_id', userId),
-    supabase.from('prayers').select('answered').eq('user_id', userId),
-    supabase.from('reactions').select('target_type').eq('user_id', userId),
-    supabase.from('group_items').select('item_key').eq('bought_by', userId),
-    getLargestGroupMemberCount(userId),
-  ]);
+  const [checkinsResult, prayersResult, reactionsResult, animalsResult, claimsResult, largestGroupMemberCount] =
+    await Promise.all([
+      supabase.from('checkins').select('group_id, book, chapter, reflection, created_at').eq('user_id', userId),
+      supabase.from('prayers').select('answered').eq('user_id', userId),
+      supabase.from('reactions').select('target_type').eq('user_id', userId),
+      supabase.from('group_items').select('item_key').eq('bought_by', userId),
+      supabase.from('mission_claims').select('mission_key, period_key').eq('user_id', userId),
+      getLargestGroupMemberCount(userId),
+    ]);
 
   if (checkinsResult.error) throw checkinsResult.error;
   if (prayersResult.error) throw prayersResult.error;
   if (reactionsResult.error) throw reactionsResult.error;
   if (animalsResult.error) throw animalsResult.error;
+  if (claimsResult.error) throw claimsResult.error;
 
   const checkins = (checkinsResult.data ?? []) as CheckinRow[];
   const prayers = prayersResult.data ?? [];
   const reactions = reactionsResult.data ?? [];
+  const claims = claimsResult.data ?? [];
+  const claimedKeys = new Set(claims.map((c) => `${c.mission_key}:${c.period_key}`));
+  const claimedCountByMission = new Map<string, number>();
+  for (const c of claims) {
+    claimedCountByMission.set(c.mission_key, (claimedCountByMission.get(c.mission_key) ?? 0) + 1);
+  }
 
   const totalCheckins = checkins.length;
   const reflectionCount = checkins.filter((c) => c.reflection).length;
-  const actionCheckinCount = checkins.filter((c) => c.kind === 'action').length;
-  const revelationCheckinCount = checkins.filter((c) => c.kind === 'revelation').length;
   const prayersSharedCount = prayers.length;
   const prayersAnsweredCount = prayers.filter((p) => p.answered).length;
   const amensGivenCount = reactions.filter((r) => r.target_type === 'checkin').length;
@@ -174,8 +192,6 @@ export async function getMissionSummary(): Promise<MissionSummary> {
   const metricValues: Record<CountMetric, number> = {
     totalCheckins,
     reflections: reflectionCount,
-    actionCheckins: actionCheckinCount,
-    revelationCheckins: revelationCheckinCount,
     prayersShared: prayersSharedCount,
     amensGiven: amensGivenCount,
     prayingTaps: prayingTapsCount,
@@ -201,38 +217,33 @@ export async function getMissionSummary(): Promise<MissionSummary> {
     checkins.filter((c) => new Date(c.created_at) >= monthStart).map((c) => dayKey(c.created_at))
   ).size;
 
-  function countQualifyingPeriods(targetDays: number, keyFor: (date: Date) => string): number {
-    const byPeriod = new Map<string, Set<string>>();
-    for (const row of checkins) {
-      const date = new Date(row.created_at);
-      const periodKey = keyFor(date);
-      const set = byPeriod.get(periodKey) ?? new Set<string>();
-      set.add(dayKey(row.created_at));
-      byPeriod.set(periodKey, set);
-    }
-    let count = 0;
-    for (const days of byPeriod.values()) {
-      if (days.size >= targetDays) count++;
-    }
-    return count;
-  }
-
   const comebacks = countComebacks(checkins);
 
   const results: MissionProgress[] = [];
   let bonusDropsEarned = 0;
+
+  // Every claimed reward counts toward the balance, regardless of whether
+  // the mission is still visible (a collected count/books mission hides,
+  // but the drops it paid out stay earned).
+  for (const claim of claims) {
+    const def = ALL_MISSIONS.find((d) => d.key === claim.mission_key);
+    if (def) bonusDropsEarned += def.reward;
+  }
 
   for (const def of ALL_MISSIONS) {
     if (def.kind === 'period') {
       const isWeek = def.period === 'week';
       const current = isWeek ? daysReadThisWeek : daysReadThisMonth;
       const periodEnd = isWeek ? weekEnd : monthEnd;
-      const qualifyingPeriods = countQualifyingPeriods(def.targetDays, (d) =>
-        isWeek ? startOfWeek(d).toISOString().slice(0, 10) : `${d.getFullYear()}-${d.getMonth()}`
-      );
-      const achieved = current >= def.targetDays;
+      const periodKey = isWeek ? weekPeriodKey(now) : monthPeriodKey(now);
+      const metTarget = current >= def.targetDays;
+      const claimed = claimedKeys.has(`${def.key}:${periodKey}`);
+      // Once collected for this period, it disappears until a new period
+      // (a different periodKey) also reaches the target.
+      if (metTarget && claimed) continue;
       results.push({
         key: def.key,
+        periodKey,
         section: def.section,
         title: def.title,
         verse: def.verse,
@@ -240,19 +251,21 @@ export async function getMissionSummary(): Promise<MissionSummary> {
         reward: def.reward,
         progress: Math.min(def.targetDays, current),
         target: def.targetDays,
-        achieved,
+        readyToCollect: metTarget && !claimed,
         daysLeft: daysUntil(periodEnd, now),
       });
-      bonusDropsEarned += qualifyingPeriods * def.reward;
       continue;
     }
 
     if (def.kind === 'count') {
       const value = metricValues[def.metric];
       const progress = Math.min(def.target, value);
-      const achieved = value >= def.target;
+      const metTarget = value >= def.target;
+      const claimed = claimedKeys.has(`${def.key}:`);
+      if (metTarget && claimed) continue;
       results.push({
         key: def.key,
+        periodKey: '',
         section: def.section,
         title: def.title,
         verse: def.verse,
@@ -260,17 +273,19 @@ export async function getMissionSummary(): Promise<MissionSummary> {
         reward: def.reward,
         progress,
         target: def.target,
-        achieved,
+        readyToCollect: metTarget && !claimed,
       });
-      if (achieved) bonusDropsEarned += def.reward;
       continue;
     }
 
     if (def.kind === 'books') {
       const booksDone = def.books.filter((b) => finishedBooks.has(b));
-      const achieved = booksDone.length === def.books.length;
+      const metTarget = booksDone.length === def.books.length;
+      const claimed = claimedKeys.has(`${def.key}:`);
+      if (metTarget && claimed) continue;
       results.push({
         key: def.key,
+        periodKey: '',
         section: def.section,
         title: def.title,
         verse: def.verse,
@@ -278,29 +293,31 @@ export async function getMissionSummary(): Promise<MissionSummary> {
         reward: def.reward,
         progress: booksDone.length,
         target: def.books.length,
-        achieved,
+        readyToCollect: metTarget && !claimed,
         bookNames: def.books,
         booksDone,
       });
-      if (achieved) bonusDropsEarned += def.reward;
       continue;
     }
 
-    // Repeatable.
+    // Repeatable — each comeback is its own occurrence to collect.
+    const claimedCount = claimedCountByMission.get(def.key) ?? 0;
+    const pending = comebacks - claimedCount;
+    if (pending <= 0) continue;
     results.push({
       key: def.key,
+      periodKey: String(claimedCount + 1),
       section: def.section,
       title: def.title,
       verse: def.verse,
       description: def.description,
       reward: def.reward,
-      progress: comebacks > 0 ? 1 : 0,
+      progress: 1,
       target: 1,
-      achieved: comebacks > 0,
+      readyToCollect: true,
       repeatable: true,
-      timesEarned: comebacks,
+      timesEarned: claimedCount,
     });
-    bonusDropsEarned += comebacks * def.reward;
   }
 
   const bySection = new Map<MissionSection, MissionProgress[]>();
@@ -316,4 +333,22 @@ export async function getMissionSummary(): Promise<MissionSummary> {
   }));
 
   return { sections, bonusDropsEarned };
+}
+
+// Returns the drops earned, or 0 if this exact mission+period was already
+// claimed (e.g. a race with another device) — never throws for that case.
+export async function claimMission(missionKey: string, periodKey: string): Promise<number> {
+  const userId = await requireUserId();
+  const def = ALL_MISSIONS.find((d) => d.key === missionKey);
+  if (!def) throw new Error('Unknown mission');
+
+  const { error } = await supabase
+    .from('mission_claims')
+    .insert({ user_id: userId, mission_key: missionKey, period_key: periodKey });
+
+  if (error) {
+    if (error.code === '23505') return 0;
+    throw error;
+  }
+  return def.reward;
 }

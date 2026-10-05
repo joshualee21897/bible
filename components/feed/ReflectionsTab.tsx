@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { KindTag } from '../checkins/KindTag';
 import { LambGuide } from '../guide/LambGuide';
 import { Tree } from '../pixel/Tree';
 import { COLORS, FONTS, HARD_SHADOW } from '../theme';
@@ -130,7 +129,6 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
                   <Text style={styles.readCheckGlyph}>✓</Text>
                 </View>
               </View>
-              <KindTag kind={item.kind} />
               {item.reflection && <Text style={styles.reflection}>"{item.reflection}"</Text>}
               <Pressable
                 style={[styles.amenButton, amened && styles.amenButtonActive]}

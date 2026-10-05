@@ -8,12 +8,13 @@ import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { LambGuide } from '../../components/guide/LambGuide';
 import { DailyDrops } from '../../components/today/DailyDrops';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
+import { showAlert } from '../../lib/alert';
 import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummary } from '../../lib/daily-drops';
 import { getMyDashboard } from '../../lib/dashboard';
 import { getDropsSummary, type DropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
 import { SECTION_LABELS } from '../../lib/mission-config';
-import { getMissionSummary, type MissionProgress, type MissionSummary } from '../../lib/missions';
+import { claimMission, getMissionSummary, type MissionProgress, type MissionSummary } from '../../lib/missions';
 
 function tierForReward(reward: number): BadgeTier {
   if (reward >= 150) return 'special';
@@ -22,13 +23,21 @@ function tierForReward(reward: number): BadgeTier {
   return 'bronze';
 }
 
-function MissionCard({ mission }: { mission: MissionProgress }) {
+function MissionCard({
+  mission,
+  collecting,
+  onCollect,
+}: {
+  mission: MissionProgress;
+  collecting: boolean;
+  onCollect: (mission: MissionProgress) => void;
+}) {
   const percent = mission.target > 0 ? (mission.progress / mission.target) * 100 : 0;
 
   let progressLabel: string;
   if (mission.repeatable) {
     progressLabel = mission.timesEarned && mission.timesEarned > 0 ? `Earned ${mission.timesEarned}×` : 'Not yet';
-  } else if (mission.achieved) {
+  } else if (mission.readyToCollect) {
     progressLabel = 'Complete!';
   } else if (mission.bookNames) {
     progressLabel = `${mission.progress} / ${mission.target} books`;
@@ -37,8 +46,8 @@ function MissionCard({ mission }: { mission: MissionProgress }) {
   }
 
   return (
-    <View style={[styles.card, mission.achieved && styles.cardAchieved]}>
-      <Badge tier={tierForReward(mission.reward)} achieved={mission.achieved} pixelSize={3} />
+    <View style={[styles.card, mission.readyToCollect && styles.cardAchieved]}>
+      <Badge tier={tierForReward(mission.reward)} achieved={mission.readyToCollect} pixelSize={3} />
       <View style={styles.cardBody}>
         <View style={styles.cardTopRow}>
           <View style={styles.cardTitleBlock}>
@@ -55,7 +64,7 @@ function MissionCard({ mission }: { mission: MissionProgress }) {
         {!mission.repeatable && <ProgressBar percent={percent} segments={8} />}
         <View style={styles.cardBottomRow}>
           <Text style={styles.cardProgressText}>{progressLabel}</Text>
-          {mission.daysLeft !== undefined && !mission.achieved && (
+          {mission.daysLeft !== undefined && !mission.readyToCollect && (
             <Text style={styles.cardTimeText}>{mission.daysLeft}d left</Text>
           )}
         </View>
@@ -65,6 +74,15 @@ function MissionCard({ mission }: { mission: MissionProgress }) {
               .map((name) => `${mission.booksDone?.includes(name) ? '✓' : '·'} ${name}`)
               .join('   ')}
           </Text>
+        )}
+        {mission.readyToCollect && (
+          <Pressable
+            style={[styles.collectButton, collecting && styles.collectButtonDisabled]}
+            onPress={() => onCollect(mission)}
+            disabled={collecting}
+          >
+            <Text style={styles.collectButtonText}>{collecting ? 'Collecting…' : 'Collect'}</Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -79,6 +97,7 @@ export default function MissionsScreen() {
   const [justCollectedFirst, setJustCollectedFirst] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [collectingKey, setCollectingKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -133,6 +152,31 @@ export default function MissionsScreen() {
   function handleDailyBreadPress() {
     if (waitingGroupId) {
       router.push(`/groups/${waitingGroupId}/bible`);
+    }
+  }
+
+  async function handleCollectMission(mission: MissionProgress) {
+    if (!drops || collectingKey) return;
+    setCollectingKey(mission.key);
+    try {
+      const reward = await claimMission(mission.key, mission.periodKey);
+      setDrops({ ...drops, balance: drops.balance + reward });
+      setMissions((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: prev.sections
+            .map((section) => ({
+              ...section,
+              missions: section.missions.filter((m) => m.key !== mission.key || m.periodKey !== mission.periodKey),
+            }))
+            .filter((section) => section.missions.length > 0),
+        };
+      });
+    } catch (error) {
+      showAlert('Something went wrong', getErrorMessage(error));
+    } finally {
+      setCollectingKey(null);
     }
   }
 
@@ -209,7 +253,12 @@ export default function MissionsScreen() {
           <Text style={styles.sectionLabel}>{SECTION_LABELS[section]}</Text>
           <View style={styles.list}>
             {sectionMissions.map((mission) => (
-              <MissionCard key={mission.key} mission={mission} />
+              <MissionCard
+                key={`${mission.key}:${mission.periodKey}`}
+                mission={mission}
+                collecting={collectingKey === mission.key}
+                onCollect={handleCollectMission}
+              />
             ))}
           </View>
         </View>
@@ -369,5 +418,20 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.serif,
     fontSize: 11,
     color: COLORS.textMuted,
+  },
+  collectButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.sage,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  collectButtonDisabled: {
+    opacity: 0.6,
+  },
+  collectButtonText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
   },
 });

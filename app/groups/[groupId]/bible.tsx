@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { KIND_OPTIONS, KindTag } from '../../../components/checkins/KindTag';
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { BookPickerSheet } from '../../../components/read/BookPickerSheet';
 import { buttonBase, COLORS, FONTS } from '../../../components/theme';
@@ -18,7 +17,6 @@ import {
   isEditableToday,
   updateCheckin,
   type Checkin,
-  type CheckinKind,
 } from '../../../lib/checkins';
 import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
@@ -44,7 +42,6 @@ export default function BibleScreen() {
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [checkedChapters, setCheckedChapters] = useState<Set<number>>(new Set());
   const [currentCheckin, setCurrentCheckin] = useState<Checkin | null>(null);
-  const [selectedKind, setSelectedKind] = useState<CheckinKind>('reflection');
   const [draftText, setDraftText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,7 +71,6 @@ export default function BibleScreen() {
         setCheckedChapters(checked);
         setCurrentCheckin(checkin);
         setDraftText(checkin?.reflection ?? '');
-        setSelectedKind(checkin?.kind ?? 'reflection');
         setErrorMessage(null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -117,7 +113,7 @@ export default function BibleScreen() {
     try {
       const text = draftText.trim();
       if (currentCheckin) {
-        const updated = await updateCheckin(currentCheckin.id, { reflection: text, kind: selectedKind });
+        const updated = await updateCheckin(currentCheckin.id, { reflection: text });
         setCurrentCheckin(updated);
       } else {
         const checkin = await createCheckin({
@@ -125,7 +121,6 @@ export default function BibleScreen() {
           book: group.book,
           chapter: selectedChapter,
           reflection: text,
-          kind: selectedKind,
         });
         setCurrentCheckin(checkin);
         const newCheckedCount = checkedChapters.size + 1;
@@ -245,22 +240,9 @@ export default function BibleScreen() {
           {editable ? (
             <>
               <Text style={styles.label}>{currentCheckin ? 'Update your check-in' : "What's on your heart?"}</Text>
-              <View style={styles.kindRow}>
-                {KIND_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option.key}
-                    style={[styles.chip, selectedKind === option.key && styles.chipSelected]}
-                    onPress={() => setSelectedKind(option.key)}
-                  >
-                    <Text style={[styles.chipText, selectedKind === option.key && styles.chipTextSelected]}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
               <TextInput
                 style={styles.reflectionInput}
-                placeholder={KIND_OPTIONS.find((o) => o.key === selectedKind)?.placeholder}
+                placeholder="What stood out to you today?"
                 multiline
                 value={draftText}
                 onChangeText={setDraftText}
@@ -282,7 +264,6 @@ export default function BibleScreen() {
             currentCheckin && (
               <>
                 <Text style={styles.doneLabel}>You've checked in for this chapter.</Text>
-                <KindTag kind={currentCheckin.kind} />
                 <Text style={styles.reflectionReadonly}>{currentCheckin.reflection}</Text>
                 <Text style={styles.lockNote}>This check-in is from an earlier day and can't be changed.</Text>
               </>
@@ -443,10 +424,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     color: COLORS.textPrimary,
-  },
-  kindRow: {
-    flexDirection: 'row',
-    gap: 8,
   },
   reflectionInput: {
     borderWidth: 2,

@@ -6,7 +6,7 @@ import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { useAuth } from '../../../lib/auth-context';
-import { buyGardenItem, getDropsSummary, getOwnedItemKeys, type DropsSummary } from '../../../lib/drops';
+import { buyGardenItem, getDropsSummary, getGroupItemCounts, type DropsSummary } from '../../../lib/drops';
 import { getErrorMessage } from '../../../lib/error-message';
 import { GARDEN_ITEMS, type GardenItemKind } from '../../../lib/garden-items';
 import { useGroup } from '../../../lib/group-context';
@@ -27,7 +27,7 @@ export default function ShopScreen() {
   const { session } = useAuth();
 
   const [drops, setDrops] = useState<DropsSummary | null>(null);
-  const [owned, setOwned] = useState<Set<string>>(new Set());
+  const [owned, setOwned] = useState<Record<string, number>>({});
   const [buyingKey, setBuyingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -37,9 +37,9 @@ export default function ShopScreen() {
   const load = useCallback(async () => {
     if (!group) return;
     try {
-      const [summary, ownedKeys] = await Promise.all([getDropsSummary(), getOwnedItemKeys(group.id)]);
+      const [summary, ownedCounts] = await Promise.all([getDropsSummary(), getGroupItemCounts(group.id)]);
       setDrops(summary);
-      setOwned(ownedKeys);
+      setOwned(ownedCounts);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -55,7 +55,7 @@ export default function ShopScreen() {
   const items = useMemo(() => {
     return GARDEN_ITEMS.filter((item) => {
       if (categoryFilter !== 'all' && item.kind !== categoryFilter) return false;
-      const isOwned = owned.has(item.key);
+      const isOwned = (owned[item.key] ?? 0) > 0;
       if (ownedFilter === 'owned' && !isOwned) return false;
       if (ownedFilter === 'unowned' && isOwned) return false;
       return true;
@@ -110,56 +110,51 @@ export default function ShopScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerTextBlock}>
           <Text style={styles.title}>Garden shop</Text>
-          <Text style={styles.subtitle}>Little gifts for our shared space.</Text>
+          <LambGuide
+            id="shop"
+            message={[
+              'Spend your drops on gifts for this garden. Each one has a verse.',
+              'These are your drops — spend them on any group’s garden.',
+              'Each gift comes with a little piece of scripture.',
+            ]}
+            pose="happy"
+          />
         </View>
         <View style={styles.balanceBadge}>
           <Text style={styles.balanceText}>💧 {drops.balance}</Text>
         </View>
       </View>
 
-      <LambGuide
-        id="shop"
-        message={[
-          'Spend your drops on gifts for this garden. Each one has a verse.',
-          'Your reading — in any group — fills your own drop balance.',
-          'Each gift comes with a little piece of scripture.',
-        ]}
-        pose="happy"
-        style={styles.lambGuide}
-      />
+      <View style={styles.filtersBlock}>
+        <View style={styles.filterRow}>
+          {(['all', 'animal', 'decoration'] as CategoryFilter[]).map((filter) => (
+            <Pressable
+              key={filter}
+              style={[styles.filterChip, categoryFilter === filter && styles.filterChipSelected]}
+              onPress={() => setCategoryFilter(filter)}
+            >
+              <Text style={[styles.filterChipText, categoryFilter === filter && styles.filterChipTextSelected]}>
+                {filter === 'all' ? 'All' : filter === 'animal' ? 'Animals' : 'Decorations'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-      <View style={styles.shopNote}>
-        <Text style={styles.shopNoteText}>▤ These are your drops — spend them on any group's garden.</Text>
-      </View>
-
-      <View style={styles.filterRow}>
-        {(['all', 'animal', 'decoration'] as CategoryFilter[]).map((filter) => (
-          <Pressable
-            key={filter}
-            style={[styles.filterChip, categoryFilter === filter && styles.filterChipSelected]}
-            onPress={() => setCategoryFilter(filter)}
-          >
-            <Text style={[styles.filterChipText, categoryFilter === filter && styles.filterChipTextSelected]}>
-              {filter === 'all' ? 'All' : filter === 'animal' ? 'Animals' : 'Decorations'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.filterRow}>
-        {(['all', 'unowned', 'owned'] as OwnedFilter[]).map((filter) => (
-          <Pressable
-            key={filter}
-            style={[styles.filterChip, ownedFilter === filter && styles.filterChipSelected]}
-            onPress={() => setOwnedFilter(filter)}
-          >
-            <Text style={[styles.filterChipText, ownedFilter === filter && styles.filterChipTextSelected]}>
-              {filter === 'all' ? 'All' : filter === 'owned' ? 'Owned' : 'Unowned'}
-            </Text>
-          </Pressable>
-        ))}
+        <View style={styles.filterRow}>
+          {(['all', 'unowned', 'owned'] as OwnedFilter[]).map((filter) => (
+            <Pressable
+              key={filter}
+              style={[styles.filterChip, ownedFilter === filter && styles.filterChipSelected]}
+              onPress={() => setOwnedFilter(filter)}
+            >
+              <Text style={[styles.filterChipText, ownedFilter === filter && styles.filterChipTextSelected]}>
+                {filter === 'all' ? 'All' : filter === 'owned' ? 'Owned' : 'Unowned'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <FlatList
@@ -170,32 +165,34 @@ export default function ShopScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={styles.empty}>No items match these filters.</Text>}
         renderItem={({ item }) => {
-          const isOwned = owned.has(item.key);
+          const ownedCount = owned[item.key] ?? 0;
+          const isOwned = ownedCount > 0;
           const canAfford = drops.balance >= item.price;
           return (
             <View style={[styles.card, { backgroundColor: tintForItem(item.key) }]}>
               {isOwned && (
                 <View style={styles.ownedCheck}>
-                  <Text style={styles.ownedCheckGlyph}>✓</Text>
+                  <Text style={styles.ownedCheckGlyph}>{ownedCount > 1 ? `×${ownedCount}` : '✓'}</Text>
                 </View>
               )}
               <View style={styles.itemSpriteBox}>
                 <GardenItemSprite itemKey={item.key} pixelSize={2.4} />
               </View>
               <Text style={styles.itemName}>{item.name}</Text>
-              {isOwned && item.verse && <Text style={styles.verse}>{item.verse}</Text>}
-              {!isOwned && <Text style={styles.price}>{item.price} drops</Text>}
-              {isOwned ? (
-                <Text style={styles.ownedLabel}>In our garden</Text>
+              {isOwned && item.verse ? (
+                <Text style={styles.verse}>{item.verse}</Text>
               ) : (
-                <Pressable
-                  style={[styles.buyButton, !canAfford && styles.buyButtonDisabled]}
-                  onPress={() => handleBuy(item.key, item.price)}
-                  disabled={!canAfford || buyingKey === item.key}
-                >
-                  <Text style={styles.buyButtonText}>{buyingKey === item.key ? 'Buying…' : 'Buy'}</Text>
-                </Pressable>
+                <Text style={styles.price}>{item.price} drops</Text>
               )}
+              <Pressable
+                style={[styles.buyButton, !canAfford && styles.buyButtonDisabled]}
+                onPress={() => handleBuy(item.key, item.price)}
+                disabled={!canAfford || buyingKey === item.key}
+              >
+                <Text style={styles.buyButtonText}>
+                  {buyingKey === item.key ? 'Buying…' : isOwned ? 'Buy another' : 'Buy'}
+                </Text>
+              </Pressable>
             </View>
           );
         }}
@@ -209,9 +206,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     padding: 16,
-  },
-  lambGuide: {
-    marginBottom: 12,
   },
   center: {
     flex: 1,
@@ -229,18 +223,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 8,
+  },
+  headerTextBlock: {
+    flex: 1,
+    gap: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
-  },
-  subtitle: {
-    marginTop: 2,
-    fontFamily: FONTS.serif,
-    fontSize: 12,
-    color: COLORS.textMuted,
   },
   balanceBadge: {
     ...HARD_SHADOW,
@@ -255,32 +248,20 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
   },
-  shopNote: {
-    marginBottom: 12,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderWidth: 1.5,
-    borderColor: COLORS.sageDark,
-    borderStyle: 'dashed',
-    borderRadius: 6,
-    backgroundColor: '#EDF8FA',
-  },
-  shopNoteText: {
-    fontFamily: FONTS.serif,
-    fontSize: 11,
-    color: COLORS.textMuted,
+  filtersBlock: {
+    marginBottom: 6,
+    gap: 6,
   },
   filterRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
   },
   filterChip: {
     borderWidth: 2,
     borderColor: COLORS.border,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     backgroundColor: COLORS.white,
   },
   filterChipSelected: {
@@ -365,12 +346,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.serif,
     color: COLORS.textMuted,
     fontSize: 12,
-  },
-  ownedLabel: {
-    fontFamily: FONTS.headingSemiBold,
-    color: COLORS.success,
-    fontSize: 11,
-    marginTop: 4,
   },
   buyButton: {
     ...buttonBase,

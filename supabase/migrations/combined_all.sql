@@ -257,11 +257,11 @@ create policy "Members can upload their own check-in photos"
     )
   );
 
--- Each garden item can only be bought once per group ------------------------
+-- Garden items can be bought more than once per group — several people
+-- (or the same person) can each add their own lion, so no uniqueness rule
+-- on (group_id, item_key). -------------------------------------------------
 
 alter table group_items drop constraint if exists group_items_group_id_item_key_key;
-alter table group_items
-  add constraint group_items_group_id_item_key_key unique (group_id, item_key);
 
 -- Links needed so the app can fetch a person's name/color alongside their
 -- check-ins or group membership in one query --------------------------------
@@ -528,6 +528,41 @@ alter table checkins add column if not exists kind text not null default 'reflec
 alter table checkins drop constraint if exists checkins_kind_check;
 alter table checkins
   add constraint checkins_kind_check check (kind in ('reflection', 'revelation', 'action'));
+
+-- Remembers which missions (Missions tab, not Daily drops) a person has
+-- collected, so a finished mission shows a one-tap "Collect" button instead
+-- of auto-crediting drops, and doesn't show it again until it's earnable
+-- again. period_key is '' for one-time count/books missions, a period
+-- identifier (e.g. "week:2026-10-05") for weekly/monthly missions, and an
+-- occurrence number (e.g. "1", "2") for the repeatable Prodigal Returns
+-- mission — one small table covers all three cases, like daily_claims. ----
+
+create table if not exists mission_claims (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  mission_key text not null,
+  period_key text not null default '',
+  created_at timestamptz not null default now(),
+  unique (user_id, mission_key, period_key)
+);
+
+alter table mission_claims enable row level security;
+
+drop policy if exists "Users can view their own mission claims" on mission_claims;
+create policy "Users can view their own mission claims"
+  on mission_claims for select
+  using (user_id = auth.uid());
+
+drop policy if exists "Users can insert their own mission claims" on mission_claims;
+create policy "Users can insert their own mission claims"
+  on mission_claims for insert
+  with check (user_id = auth.uid());
+
+-- Lets a highlight remember which color was picked for it, instead of
+-- always being the one fixed yellow. Null means "yellow" (every highlight
+-- made before this migration), so nothing already saved needs backfilling.
+
+alter table bible_annotations add column if not exists color text;
 
 -- Make sure Supabase's API layer picks up all of the above immediately ------
 

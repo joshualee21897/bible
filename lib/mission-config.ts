@@ -62,8 +62,6 @@ export const DAILY_DROPS: DailyDropDef[] = [
 export type CountMetric =
   | 'totalCheckins'
   | 'reflections'
-  | 'actionCheckins'
-  | 'revelationCheckins'
   | 'prayersShared'
   | 'amensGiven'
   | 'prayingTaps'
@@ -347,28 +345,6 @@ export const BOOK_MISSIONS: (CountMissionDef | BooksMissionDef)[] = [
 ];
 
 export const COMMUNITY_MISSIONS: CountMissionDef[] = [
-  {
-    kind: 'count',
-    key: 'doers_of_the_word',
-    section: 'community',
-    title: 'Doers of the Word',
-    verse: 'James 1:22',
-    description: 'Post 10 check-ins tagged Action.',
-    reward: 20,
-    target: 10,
-    metric: 'actionCheckins',
-  },
-  {
-    kind: 'count',
-    key: 'eyes_to_see',
-    section: 'community',
-    title: 'Eyes to See',
-    verse: 'Ephesians 1:18',
-    description: 'Post 10 check-ins tagged Revelation.',
-    reward: 20,
-    target: 10,
-    metric: 'revelationCheckins',
-  },
   {
     kind: 'count',
     key: 'ask_seek_knock',

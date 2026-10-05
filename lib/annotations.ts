@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export type VerseAnnotation = {
   highlighted: boolean;
   note: string | null;
+  color: string | null;
 };
 
 export type AnnotationEntry = {
@@ -11,6 +12,7 @@ export type AnnotationEntry = {
   verse: number;
   highlighted: boolean;
   note: string | null;
+  color: string | null;
   updated_at: string;
 };
 
@@ -29,7 +31,7 @@ export async function getChapterAnnotations(
 
   const { data, error } = await supabase
     .from('bible_annotations')
-    .select('verse, highlighted, note')
+    .select('verse, highlighted, note, color')
     .eq('user_id', userId)
     .eq('book', book)
     .eq('chapter', chapter);
@@ -38,7 +40,7 @@ export async function getChapterAnnotations(
 
   const map = new Map<number, VerseAnnotation>();
   for (const row of data ?? []) {
-    map.set(row.verse, { highlighted: row.highlighted, note: row.note });
+    map.set(row.verse, { highlighted: row.highlighted, note: row.note, color: row.color });
   }
   return map;
 }
@@ -51,7 +53,7 @@ export async function getAllAnnotations(): Promise<AnnotationEntry[]> {
 
   const { data, error } = await supabase
     .from('bible_annotations')
-    .select('book, chapter, verse, highlighted, note, updated_at')
+    .select('book, chapter, verse, highlighted, note, color, updated_at')
     .eq('user_id', userId)
     .or('highlighted.eq.true,note.not.is.null');
 
@@ -73,7 +75,7 @@ async function upsertAnnotation(
       { user_id: userId, book, chapter, verse, ...patch, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,book,chapter,verse' }
     )
-    .select('highlighted, note')
+    .select('highlighted, note, color')
     .single();
 
   if (error) throw error;
@@ -84,9 +86,10 @@ export async function setHighlight(
   book: string,
   chapter: number,
   verse: number,
-  highlighted: boolean
+  highlighted: boolean,
+  color: string | null = null
 ): Promise<VerseAnnotation> {
-  return upsertAnnotation(book, chapter, verse, { highlighted });
+  return upsertAnnotation(book, chapter, verse, { highlighted, color });
 }
 
 export async function saveNote(

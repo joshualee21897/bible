@@ -63,7 +63,6 @@ export async function createCheckin(input: {
   book: string;
   chapter: number;
   reflection: string;
-  kind: CheckinKind;
 }): Promise<Checkin> {
   const userId = await requireUserId();
 
@@ -75,7 +74,6 @@ export async function createCheckin(input: {
       book: input.book,
       chapter: input.chapter,
       reflection: input.reflection,
-      kind: input.kind,
     })
     .select()
     .single();
@@ -100,15 +98,13 @@ export async function getMyCheckin(groupId: string, book: string, chapter: numbe
   return data;
 }
 
-export async function updateCheckin(
-  checkinId: string,
-  updates: { reflection?: string; kind?: CheckinKind }
-): Promise<Checkin> {
-  const patch: { reflection?: string; kind?: CheckinKind } = {};
-  if (updates.reflection !== undefined) patch.reflection = updates.reflection;
-  if (updates.kind !== undefined) patch.kind = updates.kind;
-
-  const { data, error } = await supabase.from('checkins').update(patch).eq('id', checkinId).select().single();
+export async function updateCheckin(checkinId: string, updates: { reflection: string }): Promise<Checkin> {
+  const { data, error } = await supabase
+    .from('checkins')
+    .update({ reflection: updates.reflection })
+    .eq('id', checkinId)
+    .select()
+    .single();
 
   if (error) throw error;
   return data;

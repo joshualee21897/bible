@@ -19,7 +19,6 @@ export const GARDEN_ITEMS: GardenItem[] = [
   { key: 'lion', name: 'Lion', verse: 'Revelation 5:5', price: 250, kind: 'animal' },
   { key: 'well', name: 'Well', verse: null, price: 60, kind: 'decoration' },
   { key: 'bench', name: 'Bench', verse: null, price: 40, kind: 'decoration' },
-  { key: 'fence', name: 'Fence', verse: null, price: 50, kind: 'decoration' },
   { key: 'lanterns', name: 'Lanterns', verse: null, price: 70, kind: 'decoration' },
 ];
 

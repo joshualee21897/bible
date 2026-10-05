@@ -20,7 +20,7 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - **Backend:** **Supabase** (auth, Postgres database). No photo storage for now — see rule 1 below.
 
 ## Core rules of the app
-1. **A written reflection is the check-in.** No photo step for now (removed to stay on Supabase's free storage tier, until a permanent solution is found) — writing at least 10 characters is how a person checks in; it's required, not optional. They pick one of three kinds first: **Reflection** ("What stood out to you today?"), **Revelation** ("What did God show you?"), or **Action** ("What will you do because of this?"). The kind is saved with the check-in (`kind` column) and shown as a small pastel tag in the feed. (The `photo_path` column and the `checkin-photos` storage bucket still exist but are unused — nothing was deleted.)
+1. **A written reflection is the check-in.** No photo step for now (removed to stay on Supabase's free storage tier, until a permanent solution is found) — writing at least 10 characters is how a person checks in; it's required, not optional. There's no "kind" picker anymore (Reflection/Revelation/Action was tried and removed — one simple reflection per check-in is enough). (The `kind` column still exists on `checkins`, silently defaulted to `'reflection'` for every new row, and the `photo_path` column and `checkin-photos` storage bucket still exist too — all unused, nothing was deleted.)
 2. **One chapter a day.** The group picks a book and a start date. Day 1 = chapter 1, Day 2 = chapter 2, and so on.
 3. **Catch-up is allowed.** Anyone can read and check in on earlier chapters they missed.
 4. **A person can be in several groups.** A check-in belongs to one group. If someone is in two groups reading different books, they check in separately.
@@ -67,6 +67,7 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - The Grace section's "Prodigal Returns" mission is repeatable — it can be earned again every time someone checks in after 7+ days of rest in a group, not just once.
 - Finishing a book also shows a one-time lamb celebration on the Bible screen: "You finished [Book]! Well done, good and faithful servant."
 - Everything is computed live from check-ins, reflections, prayers, and reactions — no separate mission-progress table, same as the drops balance.
+- Reaching a mission's target doesn't auto-credit the drops — it shows a **Collect** button, same idea as Daily drops. Tapping it adds the reward to the balance and the mission then disappears from the list. A `mission_claims` table (user_id, mission_key, period_key) remembers what's been collected: `period_key` is empty for one-time missions (so collecting hides them for good), a period identifier like `week:2026-10-05` for the weekly/monthly missions (so they reappear once a new period also hits the target), and an occurrence number for the repeatable "Prodigal Returns" mission (so each comeback can be collected once, then the next one shows up next time).
 
 ### Garden animals and items (bought with drops; show the verse when unlocked)
 | Item | Verse | Price |
@@ -78,9 +79,12 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 | Donkey | Zechariah 9:9 | 120 |
 | Eagle | Isaiah 40:31 | 150 |
 | Lion | Revelation 5:5 | 250 |
-| Well, bench, fence, lanterns | none | 40–100 |
+| Well, bench, lanterns | none | 40–100 |
 
 Treat the prices as a starting point. Keep them in one config file so I can tweak them.
+
+- The same animal or item can be bought more than once per garden — two different people (or the same person twice) can each add their own lion, for instance. Bought items don't show a name label in the garden scene (trees still do, since those are tied to a person).
+- The fence that divides the bought items from everyone's trees is a permanent, always-on part of the garden layout — it's not something anyone buys from the shop.
 
 ### The lamb (mascot)
 - It lives in every garden and wanders between the trees.
@@ -105,13 +109,14 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 1. **Sign in:** a single "Continue with Google" button (Supabase Google OAuth). Add Apple sign-in later, in Phase 3.
 2. **My groups:** a list of my groups, plus "Create group" (name, book, start date, weekly target) and "Join group" (6-character invite code).
 3. **Today (per group):** today's chapter in KJV, readable and scrollable. At the bottom:
-   - Pick a kind (Reflection / Revelation / Action), write at least 10 characters, then "Check in."
+   - Write at least 10 characters, then "Check in."
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
-4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, a small kind tag, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
+4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
 5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the viewer's own drop balance, and a shop button.
 6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
-7. **Missions:** a global tab (not per group) with bonus ways to earn drops — Daily drops at the top, then this week/month goals and lifetime milestone badges, counted across all your groups.
-8. **Profile:** name and avatar color. Sign out.
+7. **Missions:** a global tab (not per group) with bonus ways to earn drops — Daily drops at the top, then this week/month goals and lifetime milestone badges, counted across all your groups. Finished missions show a Collect button rather than crediting automatically.
+8. **Read:** a global tab for browsing any book/chapter in KJV outside of a group's "Today" chapter. Tap a verse's text (not just its number) to highlight it, with a choice of a few pastel highlighter colors; tap ✎ to add a personal note. Reopening the tab (or refreshing the page) picks up at the last book/chapter read, instead of resetting to Genesis 1. A "My highlights" screen lists every highlighted/noted verse across all books.
+9. **Profile:** name and avatar color. Sign out.
 
 ## Database (Supabase)
 Write these as SQL migrations I can run in the Supabase SQL editor.
@@ -119,10 +124,12 @@ Write these as SQL migrations I can run in the Supabase SQL editor.
 - `profiles`: id (= auth user id), display_name, avatar_color, created_at
 - `groups`: id, name, invite_code (unique), book, start_date, weekly_target (default 5), created_by, created_at
 - `group_members`: group_id, user_id, role (owner/member), joined_at
-- `checkins`: id, group_id, user_id, book, chapter, reflection (required, 10+ chars), kind (reflection/revelation/action), photo_path (nullable, unused — see core rule 1), created_at
+- `checkins`: id, group_id, user_id, book, chapter, reflection (required, 10+ chars), kind (unused, always defaults to 'reflection' — see core rule 1), photo_path (nullable, unused — see core rule 1), created_at
   - Unique on (group_id, user_id, book, chapter) so the same chapter can't be counted twice.
-- `group_items`: id, group_id, item_key, bought_by, created_at
+- `group_items`: id, group_id, item_key, bought_by, created_at — no uniqueness rule, so the same item can be bought more than once for a garden.
 - `daily_claims`: id, user_id, claim_key, claim_date, created_at — unique on (user_id, claim_key, claim_date).
+- `mission_claims`: id, user_id, mission_key, period_key (default ''), created_at — unique on (user_id, mission_key, period_key). Remembers which Missions-tab rewards have been collected (see the Missions section above).
+- `bible_annotations`: id, user_id, book, chapter, verse, highlighted, color (nullable — null means the default yellow), note, updated_at — unique on (user_id, book, chapter, verse). Personal highlights and notes for the Read tab.
 
 Compute drops (earned minus spent) and tree stages from the data, rather than storing them, so they can't get out of sync.
 

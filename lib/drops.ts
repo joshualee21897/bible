@@ -16,10 +16,22 @@ async function requireUserId(): Promise<string> {
   return data.user.id;
 }
 
-export async function getOwnedItemKeys(groupId: string): Promise<Set<string>> {
+// Every item a group has bought, one entry per purchase — duplicates are
+// allowed, so several people (or the same person) can each add their own
+// lion to the same garden.
+export async function getGroupItems(groupId: string): Promise<string[]> {
   const { data, error } = await supabase.from('group_items').select('item_key').eq('group_id', groupId);
   if (error) throw error;
-  return new Set((data ?? []).map((row) => row.item_key));
+  return (data ?? []).map((row) => row.item_key);
+}
+
+// How many of each item a group owns — lets the shop show "Owned ×N"
+// without ever blocking buying another one.
+export async function getGroupItemCounts(groupId: string): Promise<Record<string, number>> {
+  const items = await getGroupItems(groupId);
+  const counts: Record<string, number> = {};
+  for (const key of items) counts[key] = (counts[key] ?? 0) + 1;
+  return counts;
 }
 
 // Drops are personal: everything you've earned — from collecting daily
