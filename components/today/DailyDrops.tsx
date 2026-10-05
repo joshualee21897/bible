@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../theme';
+import { buttonBase, COLORS, FONTS } from '../theme';
 import type { DailyDropKey, DailyDropRow } from '../../lib/daily-drops';
 
 type Props = {
   rows: DailyDropRow[];
   allCollected: boolean;
-  balance: number;
   onCollect: (key: DailyDropKey) => void;
   onDailyBreadPress: () => void;
 };
@@ -84,7 +83,7 @@ function DailyDropRowItem({
   );
 }
 
-export function DailyDrops({ rows, allCollected, balance, onCollect, onDailyBreadPress }: Props) {
+export function DailyDrops({ rows, allCollected, onCollect, onDailyBreadPress }: Props) {
   const [collapsed, setCollapsed] = useState(allCollected);
 
   useEffect(() => {
@@ -94,18 +93,12 @@ export function DailyDrops({ rows, allCollected, balance, onCollect, onDailyBrea
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Daily drops</Text>
-          <Text style={styles.subtitle}>Fresh every morning.</Text>
-        </View>
-        <View style={styles.balanceBadge}>
-          <Text style={styles.balanceText}>💧 {balance}</Text>
-        </View>
+        <Text style={styles.title}>Daily drops</Text>
       </View>
 
       {collapsed ? (
         <Pressable style={styles.collapsedCard} onPress={() => setCollapsed(false)}>
-          <Text style={styles.collapsedText}>All collected today ✓ · Come back tomorrow.</Text>
+          <Text style={styles.collapsedText}>All collected today ✓</Text>
         </Pressable>
       ) : (
         <View style={styles.list}>
@@ -136,26 +129,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  subtitle: {
-    marginTop: 2,
-    fontFamily: FONTS.serif,
-    fontSize: 11,
-    color: COLORS.textMuted,
-  },
-  balanceBadge: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    backgroundColor: COLORS.water,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
-    ...HARD_SHADOW,
-  },
-  balanceText: {
-    fontFamily: FONTS.headingSemiBold,
-    fontSize: 13,
-    color: COLORS.textPrimary,
   },
   collapsedCard: {
     borderWidth: 2,

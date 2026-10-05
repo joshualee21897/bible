@@ -8,7 +8,7 @@ function toDateKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-export function MonthCalendar({ checkinDates }: { checkinDates: Set<string> }) {
+export function MonthCalendar({ checkinDates, bare = false }: { checkinDates: Set<string>; bare?: boolean }) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -22,7 +22,7 @@ export function MonthCalendar({ checkinDates }: { checkinDates: Set<string> }) {
   const cells: (number | null)[] = [...Array(firstWeekday).fill(null), ...days];
 
   return (
-    <View style={styles.card}>
+    <View style={bare ? styles.bareCard : styles.card}>
       <View style={styles.headerRow}>
         <Text style={styles.cardTitle}>This month</Text>
         <Text style={styles.monthLabel}>{monthLabel}</Text>
@@ -82,6 +82,9 @@ const styles = StyleSheet.create({
     ...buttonBase,
     backgroundColor: COLORS.white,
     padding: 14,
+  },
+  bareCard: {
+    marginTop: 10,
   },
   headerRow: {
     flexDirection: 'row',

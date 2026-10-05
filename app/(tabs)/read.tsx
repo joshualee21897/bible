@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -12,6 +13,7 @@ import { BIBLE_BOOKS, getChapterCount } from '../../lib/bible-books';
 import { getErrorMessage } from '../../lib/error-message';
 
 export default function ReadScreen() {
+  const params = useLocalSearchParams<{ book?: string; chapter?: string }>();
   const [book, setBook] = useState(BIBLE_BOOKS[0].name);
   const [chapter, setChapter] = useState(1);
   const [annotations, setAnnotations] = useState<Map<number, VerseAnnotation>>(new Map());
@@ -23,6 +25,16 @@ export default function ReadScreen() {
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
 
   const maxChapter = getChapterCount(book);
+
+  // Jumping in from "My highlights" — picks up the book/chapter it passed
+  // each time new ones arrive, without clobbering manual picks in between.
+  useEffect(() => {
+    if (!params.book) return;
+    setBook(params.book);
+    const parsedChapter = params.chapter ? parseInt(params.chapter, 10) : 1;
+    setChapter(Number.isFinite(parsedChapter) && parsedChapter > 0 ? parsedChapter : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.book, params.chapter]);
 
   const load = useCallback(async (b: string, c: number) => {
     setLoading(true);
@@ -87,7 +99,12 @@ export default function ReadScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Read</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Read</Text>
+        <Pressable style={styles.highlightsLink} onPress={() => router.push('/highlights')} hitSlop={6}>
+          <Text style={styles.highlightsLinkText}>My highlights</Text>
+        </Pressable>
+      </View>
 
       <LambGuide
         id="read"
@@ -197,11 +214,29 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   title: {
     fontSize: 24,
     fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
-    marginBottom: 10,
+  },
+  highlightsLink: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.yellow,
+  },
+  highlightsLinkText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 11,
+    color: COLORS.textPrimary,
   },
   lambGuide: {
     marginBottom: 12,

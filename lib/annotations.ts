@@ -5,6 +5,15 @@ export type VerseAnnotation = {
   note: string | null;
 };
 
+export type AnnotationEntry = {
+  book: string;
+  chapter: number;
+  verse: number;
+  highlighted: boolean;
+  note: string | null;
+  updated_at: string;
+};
+
 async function requireUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
@@ -32,6 +41,22 @@ export async function getChapterAnnotations(
     map.set(row.verse, { highlighted: row.highlighted, note: row.note });
   }
   return map;
+}
+
+// Every verse you've highlighted or added a note to, across every book —
+// used by the "My highlights" screen. A row with highlighted=false and no
+// note shouldn't show up there (it's just a left-over from un-highlighting).
+export async function getAllAnnotations(): Promise<AnnotationEntry[]> {
+  const userId = await requireUserId();
+
+  const { data, error } = await supabase
+    .from('bible_annotations')
+    .select('book, chapter, verse, highlighted, note, updated_at')
+    .eq('user_id', userId)
+    .or('highlighted.eq.true,note.not.is.null');
+
+  if (error) throw error;
+  return (data ?? []) as AnnotationEntry[];
 }
 
 async function upsertAnnotation(

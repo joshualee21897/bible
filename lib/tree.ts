@@ -25,6 +25,18 @@ export function getNextStage(checkinCount: number): { label: string; remaining: 
   return { label: next.label, remaining: next.minCheckins - checkinCount };
 }
 
+// How far through the current stage a tree is, as a percent — the band runs
+// from the threshold just reached up to the next one.
+export function getStageProgressPercent(checkinCount: number): number {
+  const ascending = [...STAGE_THRESHOLDS].reverse();
+  const currentIndex = [...ascending].reverse().findIndex((entry) => checkinCount >= entry.minCheckins);
+  const stageIndex = ascending.length - 1 - currentIndex;
+  const lower = ascending[stageIndex].minCheckins;
+  const next = ascending[stageIndex + 1];
+  if (!next) return 100;
+  return Math.min(100, Math.round(((checkinCount - lower) / (next.minCheckins - lower)) * 100));
+}
+
 const RESTING_AFTER_DAYS = 3;
 
 // A tree that hasn't grown yet (a seed) isn't "resting" — it just hasn't

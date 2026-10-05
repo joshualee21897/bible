@@ -10,6 +10,7 @@ export type MyGroupToday = {
   maxChapter: number;
   finished: boolean;
   checkedInToday: boolean;
+  todayCheckinId: string | null;
   meetsHarvestThreshold: boolean;
 };
 
@@ -34,7 +35,7 @@ export async function getMyDashboard(): Promise<MyDashboard> {
 
   const { data, error } = await supabase
     .from('checkins')
-    .select('group_id, chapter, created_at')
+    .select('id, group_id, chapter, created_at')
     .eq('user_id', userId);
 
   if (error) throw error;
@@ -51,12 +52,14 @@ export async function getMyDashboard(): Promise<MyDashboard> {
   }
 
   const checkinsByGroup = new Map<string, Set<number>>();
+  const checkinIdByGroupChapter = new Map<string, string>();
   const checkinDates = new Set<string>();
   let lastCheckinAt: string | null = null;
   for (const row of myCheckins) {
     const chapters = checkinsByGroup.get(row.group_id) ?? new Set<number>();
     chapters.add(row.chapter);
     checkinsByGroup.set(row.group_id, chapters);
+    checkinIdByGroupChapter.set(`${row.group_id}:${row.chapter}`, row.id);
     checkinDates.add(row.created_at.slice(0, 10));
     if (!lastCheckinAt || row.created_at > lastCheckinAt) {
       lastCheckinAt = row.created_at;
@@ -69,6 +72,7 @@ export async function getMyDashboard(): Promise<MyDashboard> {
       const todayChapter = getCurrentChapterNumber(group.start_date, maxChapter);
       const finished = isBookFinished(group.start_date, maxChapter);
       const checkedInToday = checkinsByGroup.get(group.id)?.has(todayChapter) ?? false;
+      const todayCheckinId = checkinIdByGroupChapter.get(`${group.id}:${todayChapter}`) ?? null;
       const weeklyGoal = await getWeeklyGoalSummary(group.id, group.weekly_target);
       return {
         group,
@@ -76,6 +80,7 @@ export async function getMyDashboard(): Promise<MyDashboard> {
         maxChapter,
         finished,
         checkedInToday,
+        todayCheckinId,
         meetsHarvestThreshold: weeklyGoal.meetsHarvestThreshold,
       };
     })

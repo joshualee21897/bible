@@ -5,17 +5,20 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { LambGuide } from '../../components/guide/LambGuide';
 import { DailyDrops } from '../../components/today/DailyDrops';
 import { MonthCalendar } from '../../components/today/MonthCalendar';
+import { WeekStrip } from '../../components/today/WeekStrip';
 import { Avatar } from '../../components/pixel/Avatar';
 import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummary } from '../../lib/daily-drops';
-import { getMyDashboard, type MyDashboard } from '../../lib/dashboard';
+import { getMyDashboard, type MyDashboard, type MyGroupToday } from '../../lib/dashboard';
 import { getDropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
+import { getGroupPulses, type GroupPulse } from '../../lib/group-pulse';
 import { getMyProfile, type Profile } from '../../lib/profile';
-import { getTreeStage, getTreeStageLabel, getNextStage, type TreeStage } from '../../lib/tree';
+import { getReactionsFor } from '../../lib/reactions';
+import { getNextStage, getStageProgressPercent, getTreeStage, getTreeStageLabel, type TreeStage } from '../../lib/tree';
 
 const WEEKLY_PERSONAL_GOAL = 5;
 const RESTING_AFTER_DAYS = 3;
@@ -26,6 +29,10 @@ function greeting(): string {
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
 function buildLambGuide(
@@ -70,8 +77,24 @@ function buildLambGuide(
   if (waitingGroups.length === 0) {
     return { message: `${greeting()}! Our gardens are happy today.`, pose: 'happy', sparkles: false };
   }
+  if (waitingGroups.length === 1) {
+    const row = waitingGroups[0];
+    return {
+      message: row.finished ? `${greeting()}! Your groups have a chapter waiting.` : `${row.group.book} ${row.todayChapter} is waiting for you.`,
+      pose: 'waving',
+      sparkles: false,
+    };
+  }
 
-  return { message: `${greeting()}! Your groups have a chapter waiting.`, pose: 'waving', sparkles: false };
+  return { message: `You have ${pluralize(waitingGroups.length, 'chapter')} waiting for you.`, pose: 'waving', sparkles: false };
+}
+
+function groupPulseText(pulse: GroupPulse | undefined): string {
+  if (!pulse) return 'No activity yet today';
+  const parts: string[] = [];
+  if (pulse.latestCheckinName) parts.push(`${pulse.latestCheckinName} checked in`);
+  if (pulse.newPrayersCount > 0) parts.push(`${pluralize(pulse.newPrayersCount, 'new prayer')}`);
+  return parts.length > 0 ? parts.join(' · ') : 'No activity yet today';
 }
 
 export default function TodayDashboard() {
@@ -79,10 +102,13 @@ export default function TodayDashboard() {
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
   const [dailyDrops, setDailyDrops] = useState<DailyDropsSummary | null>(null);
   const [balance, setBalance] = useState(0);
+  const [amenCounts, setAmenCounts] = useState<Record<string, number>>({});
+  const [groupPulses, setGroupPulses] = useState<Record<string, GroupPulse>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [grewStage, setGrewStage] = useState(false);
   const [justCollectedFirst, setJustCollectedFirst] = useState(false);
+  const [monthExpanded, setMonthExpanded] = useState(false);
   const previousStageRef = useRef<TreeStage | null>(null);
 
   const load = useCallback(async () => {
@@ -105,6 +131,17 @@ export default function TodayDashboard() {
       setDailyDrops(myDailyDrops);
       setBalance(dropsSummary.balance);
       setErrorMessage(null);
+
+      const todayCheckinIds = myDashboard.groups
+        .map((row) => row.todayCheckinId)
+        .filter((id): id is string => id !== null);
+      const groupIds = myDashboard.groups.map((row) => row.group.id);
+      const [reactions, pulses] = await Promise.all([
+        getReactionsFor('checkin', todayCheckinIds),
+        getGroupPulses(groupIds),
+      ]);
+      setAmenCounts(reactions.counts);
+      setGroupPulses(pulses);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -137,7 +174,7 @@ export default function TodayDashboard() {
 
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
-  const weekPercent = Math.min(100, Math.round((dashboard.weekDaysRead / WEEKLY_PERSONAL_GOAL) * 100));
+  const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
   const lambGuide = buildLambGuide(dashboard, stage, grewStage, justCollectedFirst);
 
   async function handleCollect(key: DailyDropKey) {
@@ -173,6 +210,30 @@ export default function TodayDashboard() {
     }
   }
 
+  function renderReadingRow(row: MyGroupToday) {
+    const amenCount = row.todayCheckinId ? (amenCounts[row.todayCheckinId] ?? 0) : 0;
+    return (
+      <View key={row.group.id} style={styles.readingCard}>
+        <View style={styles.readingInfo}>
+          <Text style={styles.readingGroupName}>{row.group.name}</Text>
+          <Text style={styles.readingChapter}>
+            {row.finished ? `Finished ${row.group.book}!` : `${row.group.book} ${row.todayChapter}`}
+          </Text>
+        </View>
+        {row.checkedInToday ? (
+          <View style={styles.readTag}>
+            <Text style={styles.readTagText}>Checked in ✓</Text>
+            {amenCount > 0 && <Text style={styles.readTagAmen}>🙏 {amenCount}</Text>}
+          </View>
+        ) : (
+          <Pressable style={styles.readButton} onPress={() => router.push(`/groups/${row.group.id}/bible`)}>
+            <Text style={styles.readButtonText}>Read now</Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.scrollView}
@@ -188,10 +249,13 @@ export default function TodayDashboard() {
       }
     >
       <View style={styles.profileRow}>
-        <Avatar color={profile.avatar_color} name={profile.display_name} />
+        <Avatar color={profile.avatar_color} name={profile.display_name} size={36} />
         <Text style={styles.greeting}>
           {greeting()}, {profile.display_name}
         </Text>
+        <View style={styles.balanceChip}>
+          <Text style={styles.balanceChipText}>💧 {balance}</Text>
+        </View>
         <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
           <Text style={styles.settingsGlyph}>⚙</Text>
         </Pressable>
@@ -199,75 +263,72 @@ export default function TodayDashboard() {
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
-      <LambGuide
-        id="today"
-        message={lambGuide.message}
-        pose={lambGuide.pose}
-        sparkles={lambGuide.sparkles}
-      />
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>My tree</Text>
-        <View style={styles.myTreeRow}>
-          <Tree stage={stage} pixelSize={3} />
-          <View style={styles.myTreeInfo}>
-            <Text style={styles.myTreeStage}>
-              {getTreeStageLabel(stage)} · {dashboard.totalCheckins} chapters read
-            </Text>
-            <Text style={styles.myTreeNext}>
-              {nextStage ? `${nextStage.remaining} more to grow into a ${nextStage.label.toLowerCase()}` : "You've reached full growth!"}
-            </Text>
-          </View>
+      <View style={styles.heroCard}>
+        <LambGuide id="today" message={lambGuide.message} pose={lambGuide.pose} sparkles={lambGuide.sparkles} />
+        <Text style={styles.heroTitle}>Today's reading</Text>
+        <View style={styles.readingList}>
+          {dashboard.groups.length === 0 && (
+            <Text style={styles.empty}>You're not in any groups yet — head to the Groups tab to join or create one.</Text>
+          )}
+          {dashboard.groups.map(renderReadingRow)}
         </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>Today's reading</Text>
-      <View style={styles.readingList}>
-        {dashboard.groups.length === 0 && (
-          <Text style={styles.empty}>You're not in any groups yet — head to the Groups tab to join or create one.</Text>
-        )}
-        {dashboard.groups.map((row) => (
-          <View key={row.group.id} style={styles.readingCard}>
-            <View style={styles.readingInfo}>
-              <Text style={styles.readingGroupName}>{row.group.name}</Text>
-              <Text style={styles.readingChapter}>
-                {row.finished ? `Finished ${row.group.book}!` : `${row.group.book} ${row.todayChapter}`}
-              </Text>
-            </View>
-            {row.checkedInToday ? (
-              <View style={styles.readTag}>
-                <Text style={styles.readTagText}>Read ✓</Text>
-              </View>
-            ) : (
-              <Pressable style={styles.readButton} onPress={() => router.push(`/groups/${row.group.id}/bible`)}>
-                <Text style={styles.readButtonText}>Read now</Text>
-              </Pressable>
-            )}
-          </View>
-        ))}
       </View>
 
       {dailyDrops && (
         <DailyDrops
           rows={dailyDrops.rows}
           allCollected={dailyDrops.allCollected}
-          balance={balance}
           onCollect={handleCollect}
           onDailyBreadPress={handleDailyBreadPress}
         />
       )}
 
       <View style={styles.card}>
-        <View style={styles.weekRow}>
-          <Text style={styles.cardTitle}>This week</Text>
-          <Text style={styles.weekValue}>
-            {dashboard.weekDaysRead} / {WEEKLY_PERSONAL_GOAL} days
-          </Text>
+        <View style={styles.myTreeRow}>
+          <Tree stage={stage} pixelSize={5} />
+          <View style={styles.myTreeInfo}>
+            <Text style={styles.myTreeStage}>{getTreeStageLabel(stage)}</Text>
+            <Text style={styles.myTreeCount}>{pluralize(dashboard.totalCheckins, 'chapter')} read</Text>
+            {nextStage ? (
+              <>
+                <ProgressBar percent={stageProgressPercent} segments={8} />
+                <Text style={styles.myTreeNext}>
+                  {pluralize(nextStage.remaining, 'more')} to grow into a {nextStage.label.toLowerCase()}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.myTreeNext}>You've reached full growth!</Text>
+            )}
+          </View>
         </View>
-        <ProgressBar percent={weekPercent} />
+
+        <View style={styles.divider} />
+
+        <WeekStrip checkinDates={dashboard.checkinDates} weeklyGoal={WEEKLY_PERSONAL_GOAL} />
+
+        <Pressable style={styles.monthToggle} onPress={() => setMonthExpanded((v) => !v)}>
+          <Text style={styles.monthToggleText}>{monthExpanded ? 'Show less ▴' : 'See my month ▾'}</Text>
+        </Pressable>
+        {monthExpanded && <MonthCalendar checkinDates={dashboard.checkinDates} bare />}
       </View>
 
-      <MonthCalendar checkinDates={dashboard.checkinDates} />
+      {dashboard.groups.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Group pulse</Text>
+          <View style={styles.pulseList}>
+            {dashboard.groups.map((row) => (
+              <Pressable
+                key={row.group.id}
+                style={styles.pulseRow}
+                onPress={() => router.push(`/groups/${row.group.id}/feed`)}
+              >
+                <Text style={styles.pulseGroupName}>{row.group.name}</Text>
+                <Text style={styles.pulseText}>{groupPulseText(groupPulses[row.group.id])}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -279,7 +340,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    paddingTop: 56,
+    paddingTop: 52,
     paddingBottom: 40,
     gap: 14,
   },
@@ -308,17 +369,42 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   greeting: {
     flex: 1,
     fontFamily: FONTS.heading,
-    fontSize: 18,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+  },
+  balanceChip: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    backgroundColor: COLORS.water,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    ...HARD_SHADOW,
+  },
+  balanceChipText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
     color: COLORS.textPrimary,
   },
   settingsGlyph: {
     fontSize: 20,
     color: COLORS.textMuted,
+  },
+  heroCard: {
+    ...buttonBase,
+    backgroundColor: COLORS.white,
+    padding: 14,
+    gap: 10,
+  },
+  heroTitle: {
+    fontFamily: FONTS.heading,
+    fontSize: 16,
+    color: COLORS.textPrimary,
   },
   card: {
     ...buttonBase,
@@ -333,41 +419,44 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   myTreeRow: {
-    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
   myTreeInfo: {
     flex: 1,
+    gap: 4,
   },
   myTreeStage: {
     fontFamily: FONTS.headingSemiBold,
     fontSize: 15,
     color: COLORS.textPrimary,
   },
-  myTreeNext: {
-    marginTop: 4,
+  myTreeCount: {
     fontFamily: FONTS.serif,
     fontSize: 12,
     color: COLORS.textMuted,
+    marginBottom: 4,
   },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  weekValue: {
-    fontFamily: FONTS.headingSemiBold,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-  },
-  sectionTitle: {
+  myTreeNext: {
     marginTop: 4,
-    fontFamily: FONTS.heading,
-    fontSize: 16,
-    color: COLORS.textPrimary,
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  divider: {
+    height: 2,
+    backgroundColor: COLORS.background,
+    marginVertical: 14,
+  },
+  monthToggle: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  monthToggleText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 12,
+    color: COLORS.sageDark,
   },
   readingList: {
     gap: 10,
@@ -404,12 +493,12 @@ const styles = StyleSheet.create({
   readButton: {
     ...buttonBase,
     backgroundColor: COLORS.sage,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
   },
   readButtonText: {
     fontFamily: FONTS.headingSemiBold,
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textPrimary,
   },
   readTag: {
@@ -419,10 +508,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDF8E9',
     paddingVertical: 8,
     paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 2,
   },
   readTagText: {
     fontFamily: FONTS.headingSemiBold,
     fontSize: 12,
     color: COLORS.success,
+  },
+  readTagAmen: {
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  pulseList: {
+    marginTop: 8,
+    gap: 10,
+  },
+  pulseRow: {
+    gap: 2,
+  },
+  pulseGroupName: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  pulseText: {
+    fontFamily: FONTS.serif,
+    fontSize: 12,
+    color: COLORS.textMuted,
   },
 });

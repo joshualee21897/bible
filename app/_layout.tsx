@@ -46,6 +46,7 @@ export default function RootLayout() {
           <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
           <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
           <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
+          <Stack.Screen name="highlights" options={{ headerShown: true, title: 'My highlights' }} />
         </Stack>
         <StatusBar style="auto" />
       </LambGuideProvider>
