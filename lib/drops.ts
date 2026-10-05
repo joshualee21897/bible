@@ -36,8 +36,9 @@ export async function getGroupItemCounts(groupId: string): Promise<Record<string
 
 // Drops are personal: everything you've earned — from collecting daily
 // drops and from Missions bonuses — across every group you're in, minus
-// everything you've spent in any group's shop. Always computed fresh from
-// the data, never stored, so it can't drift out of sync.
+// everything you've spent in any group's shop and everything you've given
+// to any group's Storehouse. Always computed fresh from the data, never
+// stored, so it can't drift out of sync.
 //
 // Reading itself no longer earns drops automatically on check-in — that
 // used to double-count against the Today tab's "Daily drops" checklist
@@ -47,14 +48,16 @@ export async function getGroupItemCounts(groupId: string): Promise<Record<string
 export async function getDropsSummary(): Promise<DropsSummary> {
   const userId = await requireUserId();
 
-  const [claimsResult, spentResult, missionSummary] = await Promise.all([
+  const [claimsResult, spentResult, givenResult, missionSummary] = await Promise.all([
     supabase.from('daily_claims').select('claim_key').eq('user_id', userId),
     supabase.from('group_items').select('item_key').eq('bought_by', userId),
+    supabase.from('storehouse_deposits').select('amount').eq('user_id', userId),
     getMissionSummary(),
   ]);
 
   if (claimsResult.error) throw claimsResult.error;
   if (spentResult.error) throw spentResult.error;
+  if (givenResult.error) throw givenResult.error;
 
   const rewardByKey = new Map(DAILY_DROPS.map((d) => [d.key, d.reward]));
   const earnedFromDailyDrops = (claimsResult.data ?? []).reduce(
@@ -64,7 +67,12 @@ export async function getDropsSummary(): Promise<DropsSummary> {
 
   const earned = earnedFromDailyDrops + missionSummary.bonusDropsEarned;
 
-  const spent = (spentResult.data ?? []).reduce((total, row) => total + (getGardenItem(row.item_key)?.price ?? 0), 0);
+  const spentInShops = (spentResult.data ?? []).reduce(
+    (total, row) => total + (getGardenItem(row.item_key)?.price ?? 0),
+    0
+  );
+  const givenToStorehouses = (givenResult.data ?? []).reduce((total, row) => total + row.amount, 0);
+  const spent = spentInShops + givenToStorehouses;
 
   return { earned, spent, balance: earned - spent };
 }

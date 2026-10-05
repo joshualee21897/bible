@@ -1,5 +1,6 @@
 import { getChapterCount } from './bible-books';
 import { getGardenItem } from './garden-items';
+import { getLevelForTotal } from './garden-levels';
 import {
   ALL_MISSIONS,
   SECTION_ORDER,
@@ -134,6 +135,42 @@ async function getLargestGroupMemberCount(userId: string): Promise<number> {
   return Math.max(0, ...counts.values());
 }
 
+// How many times this person has given to any Storehouse, and the highest
+// garden level any group they belong to has reached (from that group's
+// total deposits, across everyone in it) — used by the Cheerful Giver and
+// Laborers Together missions.
+async function getStorehouseMetrics(userId: string): Promise<{ depositsMade: number; maxGroupLevelReached: number }> {
+  const [ownDepositsResult, myGroupsResult] = await Promise.all([
+    supabase.from('storehouse_deposits').select('id').eq('user_id', userId),
+    supabase.from('group_members').select('group_id').eq('user_id', userId),
+  ]);
+  if (ownDepositsResult.error) throw ownDepositsResult.error;
+  if (myGroupsResult.error) throw myGroupsResult.error;
+
+  const groupIds = (myGroupsResult.data ?? []).map((row) => row.group_id);
+  if (groupIds.length === 0) {
+    return { depositsMade: (ownDepositsResult.data ?? []).length, maxGroupLevelReached: 0 };
+  }
+
+  const { data: groupDeposits, error: groupDepositsError } = await supabase
+    .from('storehouse_deposits')
+    .select('group_id, amount')
+    .in('group_id', groupIds);
+  if (groupDepositsError) throw groupDepositsError;
+
+  const totalsByGroup = new Map<string, number>();
+  for (const row of groupDeposits ?? []) {
+    totalsByGroup.set(row.group_id, (totalsByGroup.get(row.group_id) ?? 0) + row.amount);
+  }
+
+  let maxGroupLevelReached = 0;
+  for (const total of totalsByGroup.values()) {
+    maxGroupLevelReached = Math.max(maxGroupLevelReached, getLevelForTotal(total).level.index);
+  }
+
+  return { depositsMade: (ownDepositsResult.data ?? []).length, maxGroupLevelReached };
+}
+
 function weekPeriodKey(date: Date): string {
   return `week:${startOfWeek(date).toISOString().slice(0, 10)}`;
 }
@@ -145,15 +182,23 @@ function monthPeriodKey(date: Date): string {
 export async function getMissionSummary(): Promise<MissionSummary> {
   const userId = await requireUserId();
 
-  const [checkinsResult, prayersResult, reactionsResult, animalsResult, claimsResult, largestGroupMemberCount] =
-    await Promise.all([
-      supabase.from('checkins').select('group_id, book, chapter, reflection, created_at').eq('user_id', userId),
-      supabase.from('prayers').select('answered').eq('user_id', userId),
-      supabase.from('reactions').select('target_type').eq('user_id', userId),
-      supabase.from('group_items').select('item_key').eq('bought_by', userId),
-      supabase.from('mission_claims').select('mission_key, period_key').eq('user_id', userId),
-      getLargestGroupMemberCount(userId),
-    ]);
+  const [
+    checkinsResult,
+    prayersResult,
+    reactionsResult,
+    animalsResult,
+    claimsResult,
+    largestGroupMemberCount,
+    storehouseMetrics,
+  ] = await Promise.all([
+    supabase.from('checkins').select('group_id, book, chapter, reflection, created_at').eq('user_id', userId),
+    supabase.from('prayers').select('answered').eq('user_id', userId),
+    supabase.from('reactions').select('target_type').eq('user_id', userId),
+    supabase.from('group_items').select('item_key').eq('bought_by', userId),
+    supabase.from('mission_claims').select('mission_key, period_key').eq('user_id', userId),
+    getLargestGroupMemberCount(userId),
+    getStorehouseMetrics(userId),
+  ]);
 
   if (checkinsResult.error) throw checkinsResult.error;
   if (prayersResult.error) throw prayersResult.error;
@@ -202,6 +247,8 @@ export async function getMissionSummary(): Promise<MissionSummary> {
     sundaysRead,
     distinctDaysRead,
     finishedBooksCount: finishedBooks.size,
+    storehouseDepositsMade: storehouseMetrics.depositsMade,
+    maxGroupLevelReached: storehouseMetrics.maxGroupLevelReached,
   };
 
   const now = new Date();

@@ -71,7 +71,9 @@ export type CountMetric =
   | 'beforeNineDays'
   | 'sundaysRead'
   | 'distinctDaysRead'
-  | 'finishedBooksCount';
+  | 'finishedBooksCount'
+  | 'storehouseDepositsMade'
+  | 'maxGroupLevelReached';
 
 export type CountMissionDef = {
   kind: 'count';
@@ -399,6 +401,28 @@ export const COMMUNITY_MISSIONS: CountMissionDef[] = [
     reward: 10,
     target: 3,
     metric: 'largestGroupMemberCount',
+  },
+  {
+    kind: 'count',
+    key: 'cheerful_giver',
+    section: 'community',
+    title: 'Cheerful Giver',
+    verse: '2 Corinthians 9:7',
+    description: 'Give drops to a Storehouse for the first time.',
+    reward: 10,
+    target: 1,
+    metric: 'storehouseDepositsMade',
+  },
+  {
+    kind: 'count',
+    key: 'laborers_together',
+    section: 'community',
+    title: 'Laborers Together',
+    verse: '1 Corinthians 3:9',
+    description: 'Be part of a garden that reaches Sheepfold.',
+    reward: 30,
+    target: 2,
+    metric: 'maxGroupLevelReached',
   },
 ];
 

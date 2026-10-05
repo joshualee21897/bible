@@ -46,9 +46,9 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 
 ### Water drops (currency, per person)
 - Reading itself doesn't earn drops automatically anymore — drops come from explicitly collecting a "Daily drop" (see below) or a Missions bonus. This avoids double-counting the same chapter/reflection.
-- Drops belong to the person, not the group — your balance is everything you've collected from Daily drops plus Missions bonuses, across *every* group you're in, minus everything you've personally spent.
+- Drops belong to the person, not the group — your balance is everything you've collected from Daily drops plus Missions bonuses, across *every* group you're in, minus everything you've personally spent (shop purchases) and given (Storehouse deposits, see below).
 - You can spend your drops in any group's shop. The item you buy joins that group's shared garden, but it's paid for from your own balance — so several people can each contribute items to the same garden using their own progress.
-- Compute the balance from the data every time (daily_claims + mission progress + purchases), never store the balance itself, so it can't drift out of sync.
+- Compute the balance from the data every time (daily_claims + mission progress + purchases + Storehouse deposits), never store the balance itself, so it can't drift out of sync.
 
 ### Daily drops (Missions tab)
 - A "Daily drops" section at the top of the Missions tab, above the mission sections — six small once-a-day tasks, each with a name, a verse reference, and a reward. Defined in `lib/mission-config.ts` (`DAILY_DROPS`).
@@ -86,6 +86,29 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 - The same animal or item can be bought more than once per garden — two different people (or the same person twice) can each add their own lion, for instance. Bought items don't show a name label in the garden scene (trees still do, since those are tied to a person).
 - The fence that divides the bought items from everyone's trees is a permanent, always-on part of the garden layout — it's not something anyone buys from the shop.
 
+### The Storehouse and garden levels
+- Each group has a shared **Storehouse** (Genesis 41:56) — a pool of drops the group fills together, separate from the shop. Anyone can give ("deposit") drops from their own personal balance into their group's Storehouse; once given, it can't be taken back.
+- The Garden tab shows a "Storehouse" card: a pixel progress bar toward the next level, a "Give drops" button (quick amounts of 10/50/100, or a custom amount up to your balance), and a plain list of who's given — **names only, never amounts or a ranking** (Matthew 6:3).
+- As the group's total ever given rises, the garden grows through 7 levels, each costing more (on top of the last) to reach:
+
+  | Level | Verse | Cost from previous |
+  |---|---|---|
+  | Good Ground | Mark 4:8 | — (starting level) |
+  | Shepherd's Tent | Genesis 12:8 | 300 |
+  | Sheepfold | John 10:16 | 700 |
+  | Olive Grove | Psalm 52:8 | 1,200 |
+  | Vineyard | John 15:5 | 2,000 |
+  | House on the Rock | Matthew 7:24 | 3,500 |
+  | Like Eden | Isaiah 51:3 | 5,000 |
+
+  Levels and verses live in `lib/garden-levels.ts`, so they can be tweaked without touching anything else. A level is never stored — always worked out fresh from the Storehouse's running total, same as drops and tree stages.
+- Each level adds its own small piece of garden art (a tent, then a sheepfold with a sheep friend, then olive trees and a well, then a vineyard and winepress, then a house, then a river with blossoms and birds) on top of what came before — gardens never lose a level, and everyone's trees and bought animals stay visible at every level.
+- The Garden tab's top-right shows the current level's name and verse, tappable to open a "Levels" sheet listing all 7 (levels not yet reached are greyed out).
+- The bottom of the Garden tab has four buttons: **Shop**, **Upgrade** (opens the Levels sheet), **Deposit** (opens the Give-drops sheet), and **Leave**.
+- When the group crosses into a new level, everyone sees a one-time full-screen celebration (the lamb doing a happy hop, the new level's name and verse) the next time they open the Garden tab, and the group feed gets a "🌿 Our garden became a [Level]!" message.
+- Two missions reward Storehouse giving: **Cheerful Giver** (2 Corinthians 9:7, give for the first time, +10) and **Laborers Together** (1 Corinthians 3:9, be part of a garden that reaches Sheepfold, +30).
+- A deposit can't push a personal balance below zero — checked by the database itself (not just the app), so it can't be bypassed.
+
 ### The lamb (mascot)
 - It lives in every garden and wanders between the trees.
 - Its moods:
@@ -93,10 +116,6 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
   - **Waiting by your tree:** you haven't read today.
   - **Sleeping:** at night.
 - It's used in reminders, e.g., "The lamb is waiting by your tree."
-
-### Weekly group goal and Harvest Supper
-- The group sets a target of how many days a week each person aims to read (default 5).
-- If the group reaches 80% of its combined target for the week, the garden **bears fruit** for that week and shows a **Harvest Supper** card: a prompt to meet up in person and share what they read.
 
 ## Wording rules (important)
 - Never use words like "loser," "failed," "missed," "streak lost," "wilted," or "dead."
@@ -112,7 +131,7 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
    - Write at least 10 characters, then "Check in."
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
 4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
-5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the viewer's own drop balance, and a shop button.
+5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, plus a level header (current level + verse, tap for the Levels sheet) and the group's Storehouse card. The viewer's own drop balance and the invite code sit at the top; Shop, Upgrade, Deposit, and Leave sit at the bottom. Leaving a group requires typing the group's name to confirm, so it can't happen by accident.
 6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
 7. **Missions:** a global tab (not per group) with bonus ways to earn drops — Daily drops at the top, then this week/month goals and lifetime milestone badges, counted across all your groups. Finished missions show a Collect button rather than crediting automatically.
 8. **Read:** a global tab for browsing any book/chapter in KJV outside of a group's "Today" chapter. Tap a verse's text (not just its number) to highlight it, with a choice of a few pastel highlighter colors; tap ✎ to add a personal note. Reopening the tab (or refreshing the page) picks up at the last book/chapter read, instead of resetting to Genesis 1. A "My highlights" screen lists every highlighted/noted verse across all books.
@@ -130,14 +149,18 @@ Write these as SQL migrations I can run in the Supabase SQL editor.
 - `daily_claims`: id, user_id, claim_key, claim_date, created_at — unique on (user_id, claim_key, claim_date).
 - `mission_claims`: id, user_id, mission_key, period_key (default ''), created_at — unique on (user_id, mission_key, period_key). Remembers which Missions-tab rewards have been collected (see the Missions section above).
 - `bible_annotations`: id, user_id, book, chapter, verse, highlighted, color (nullable — null means the default yellow), note, updated_at — unique on (user_id, book, chapter, verse). Personal highlights and notes for the Read tab.
+- `storehouse_deposits`: id, group_id, user_id, amount, created_at. One-way (no edit or delete) — a group's level is always the running total of these, never stored (see the Storehouse section above).
+- `group_level_events`: id, group_id, level_index, reached_at — unique on (group_id, level_index). One row per level a group has ever reached, so the celebration and the feed message only ever happen once per group per level.
+- `daily_drop_rewards`, `mission_rewards`, `garden_item_prices`: small reference tables mirroring the reward/price numbers in `lib/mission-config.ts` and `lib/garden-items.ts`. They exist only so the database can check a Storehouse deposit doesn't overdraw someone's balance — **if you ever change a reward or price in those two files, update the matching row in these tables too**, or the database's math will fall out of step with the app's.
 
-Compute drops (earned minus spent) and tree stages from the data, rather than storing them, so they can't get out of sync.
+Compute drops (earned minus spent minus given) and tree stages from the data, rather than storing them, so they can't get out of sync.
 
 ### Security (must have)
 - Turn on **row-level security** on every table.
 - A user can only read groups, members, check-ins, and items for groups they belong to — plus a group they just created, even before they're added as a member (closes a gap where creating a group would otherwise fail).
 - A user can only create check-ins for themselves.
 - A user can only read and insert their own daily_claims rows.
+- A user can only give to the Storehouse of a group they belong to, for themselves — and the database itself blocks a deposit larger than their current balance, not just the app.
 - Joining a group requires a valid invite code.
 
 ## Art direction: 8-bit pixel art

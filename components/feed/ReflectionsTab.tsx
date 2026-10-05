@@ -6,12 +6,18 @@ import { Tree } from '../pixel/Tree';
 import { COLORS, FONTS, HARD_SHADOW } from '../theme';
 import { getGroupFeed, getGroupMembersWithCheckinCounts, type CheckinWithProfile } from '../../lib/checkins';
 import { getErrorMessage } from '../../lib/error-message';
+import { GARDEN_LEVELS } from '../../lib/garden-levels';
 import { addReaction, getReactionsFor, removeReaction } from '../../lib/reactions';
+import { getLevelEvents, type LevelEvent } from '../../lib/storehouse';
 import { timeAgo } from '../../lib/time-ago';
 import { getTreeStage, getTreeStageLabel } from '../../lib/tree';
 
+type FeedRow =
+  | { kind: 'checkin'; at: string; checkin: CheckinWithProfile }
+  | { kind: 'level'; at: string; event: LevelEvent };
+
 export function ReflectionsTab({ groupId }: { groupId: string }) {
-  const [feed, setFeed] = useState<CheckinWithProfile[] | null>(null);
+  const [rows, setRows] = useState<FeedRow[] | null>(null);
   const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({});
   const [amenCounts, setAmenCounts] = useState<Record<string, number>>({});
   const [myAmens, setMyAmens] = useState<Set<string>>(new Set());
@@ -20,11 +26,16 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const [items, members] = await Promise.all([
+      const [items, members, levelEvents] = await Promise.all([
         getGroupFeed(groupId),
         getGroupMembersWithCheckinCounts(groupId),
+        getLevelEvents(groupId),
       ]);
-      setFeed(items);
+      const merged: FeedRow[] = [
+        ...items.map((checkin): FeedRow => ({ kind: 'checkin', at: checkin.created_at, checkin })),
+        ...levelEvents.map((event): FeedRow => ({ kind: 'level', at: event.reached_at, event })),
+      ].sort((a, b) => b.at.localeCompare(a.at));
+      setRows(merged);
       setCheckinCounts(Object.fromEntries(members.map((member) => [member.user_id, member.checkin_count])));
       setErrorMessage(null);
 
@@ -74,7 +85,7 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
     }
   }
 
-  if (feed === null && !errorMessage) {
+  if (rows === null && !errorMessage) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -96,8 +107,8 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
       />
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
       <FlatList
-        data={feed ?? []}
-        keyExtractor={(item) => item.id}
+        data={rows ?? []}
+        keyExtractor={(row) => (row.kind === 'checkin' ? row.checkin.id : `level-${row.event.id}`)}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -109,7 +120,19 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
           />
         }
         ListEmptyComponent={<Text style={styles.empty}>No check-ins yet. Be the first to read today's chapter.</Text>}
-        renderItem={({ item }) => {
+        renderItem={({ item: row }) => {
+          if (row.kind === 'level') {
+            const level = GARDEN_LEVELS[row.event.level_index];
+            return (
+              <View style={styles.levelCard}>
+                <Text style={styles.levelCardText}>
+                  🌿 Our garden became a {level?.name ?? 'new level'}! <Text style={styles.stageLabel}>· {timeAgo(row.event.reached_at)}</Text>
+                </Text>
+              </View>
+            );
+          }
+
+          const item = row.checkin;
           const stage = getTreeStage(checkinCounts[item.user_id] ?? 0);
           const amened = myAmens.has(item.id);
           const amenCount = amenCounts[item.id] ?? 0;
@@ -181,6 +204,20 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
     backgroundColor: COLORS.white,
+  },
+  levelCard: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: COLORS.sage,
+    alignItems: 'center',
+  },
+  levelCardText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
   },
   cardHeader: {
     flexDirection: 'row',

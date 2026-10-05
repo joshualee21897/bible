@@ -14,9 +14,12 @@ import {
 } from 'react-native';
 
 import { InfoSheet } from '../../../components/garden/InfoSheet';
+import { LevelUpCelebration } from '../../../components/garden/LevelUpCelebration';
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { buildFlatFence, buildFlatGround } from '../../../components/pixel/flat-ground';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
+import { getLevelDecorKeys } from '../../../components/pixel/garden-level-decor';
+import { GardenLevelDecorSprite } from '../../../components/pixel/GardenLevelDecorSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { PixelGrid } from '../../../components/pixel/PixelGrid';
 import { ProgressBar } from '../../../components/pixel/ProgressBar';
@@ -29,19 +32,22 @@ import { useAuth } from '../../../lib/auth-context';
 import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyCheckedChapters, type MemberWithStats } from '../../../lib/checkins';
 import { getDropsSummary, getGroupItems, type DropsSummary } from '../../../lib/drops';
 import { getErrorMessage } from '../../../lib/error-message';
+import { GARDEN_LEVELS, type GardenLevelDef } from '../../../lib/garden-levels';
 import { leaveGroup } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
 import { getLambMood } from '../../../lib/lamb-mood';
+import { getLastSeenLevel, setLastSeenLevel } from '../../../lib/level-celebration';
+import { depositToStorehouse, getStorehouseSummary, recordLevelsReached, type StorehouseSummary } from '../../../lib/storehouse';
 import { getTreeStage, getTreeStageLabel, isTreeResting } from '../../../lib/tree';
-import { getWeeklyGoalSummary, type WeeklyGoalSummary } from '../../../lib/weekly-goal';
 
 const PIXEL_SIZE = 3;
 const COLUMNS = 3;
 const SKY_HEIGHT = 70;
 const GROUND_BAND_HEIGHT = 32;
 const FENCE_HEIGHT = 24;
+const DEPOSIT_QUICK_AMOUNTS = [10, 50, 100];
 
-type SheetKind = 'balance' | 'invite' | 'week' | 'leave' | null;
+type SheetKind = 'balance' | 'invite' | 'levels' | 'deposit' | 'leave' | null;
 
 export default function GroupGardenScreen() {
   const { group } = useGroup();
@@ -51,13 +57,17 @@ export default function GroupGardenScreen() {
   const [members, setMembers] = useState<MemberWithStats[] | null>(null);
   const [drops, setDrops] = useState<DropsSummary | null>(null);
   const [ownedItemKeys, setOwnedItemKeys] = useState<string[]>([]);
-  const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoalSummary | null>(null);
+  const [storehouse, setStorehouse] = useState<StorehouseSummary | null>(null);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [openSheet, setOpenSheet] = useState<SheetKind>(null);
   const [leaveText, setLeaveText] = useState('');
   const [leaving, setLeaving] = useState(false);
+  const [depositAmount, setDepositAmount] = useState<number | null>(null);
+  const [customDepositText, setCustomDepositText] = useState('');
+  const [depositing, setDepositing] = useState(false);
+  const [celebratingLevel, setCelebratingLevel] = useState<GardenLevelDef | null>(null);
 
   const sceneHeight = Math.round(windowHeight * 0.75);
   const sceneWidth = windowWidth - 32;
@@ -76,20 +86,30 @@ export default function GroupGardenScreen() {
       const maxChapter = getChapterCount(group.book);
       const todayChapter = getCurrentChapterNumber(group.start_date, maxChapter);
 
-      const [stats, dropsSummary, owned, goalSummary, checkedChapters] = await Promise.all([
+      const [stats, dropsSummary, owned, storehouseSummary, checkedChapters] = await Promise.all([
         getGroupMembersWithCheckinCounts(group.id),
         getDropsSummary(),
         getGroupItems(group.id),
-        getWeeklyGoalSummary(group.id, group.weekly_target),
+        getStorehouseSummary(group.id),
         getMyCheckedChapters(group.id, group.book),
       ]);
 
       setMembers(stats);
       setDrops(dropsSummary);
       setOwnedItemKeys(owned);
-      setWeeklyGoal(goalSummary);
+      setStorehouse(storehouseSummary);
       setHasCheckedInToday(checkedChapters.has(todayChapter));
       setErrorMessage(null);
+
+      const currentIndex = storehouseSummary.progress.level.index;
+      recordLevelsReached(group.id, currentIndex).catch(() => {
+        // Best-effort — worst case the feed banner is posted a little late.
+      });
+      const lastSeen = getLastSeenLevel(group.id);
+      if (currentIndex > lastSeen) {
+        setCelebratingLevel(storehouseSummary.progress.level);
+      }
+      setLastSeenLevel(group.id, currentIndex);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -126,6 +146,24 @@ export default function GroupGardenScreen() {
     }
   }
 
+  async function handleGiveDrops() {
+    if (!group || !drops || depositAmount === null) return;
+    if (depositAmount <= 0 || depositAmount > drops.balance) return;
+
+    setDepositing(true);
+    try {
+      await depositToStorehouse(group.id, depositAmount);
+      setOpenSheet(null);
+      setDepositAmount(null);
+      setCustomDepositText('');
+      await load();
+    } catch (error) {
+      showAlert('Something went wrong', getErrorMessage(error));
+    } finally {
+      setDepositing(false);
+    }
+  }
+
   if (!group) {
     return (
       <View style={styles.center}>
@@ -134,7 +172,7 @@ export default function GroupGardenScreen() {
     );
   }
 
-  if (errorMessage && (members === null || !drops || !weeklyGoal)) {
+  if (errorMessage && (members === null || !drops || !storehouse)) {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>{errorMessage}</Text>
@@ -145,7 +183,7 @@ export default function GroupGardenScreen() {
     );
   }
 
-  if (members === null || !drops || !weeklyGoal) {
+  if (members === null || !drops || !storehouse) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -154,6 +192,7 @@ export default function GroupGardenScreen() {
   }
 
   const lambMood = getLambMood(hasCheckedInToday);
+  const decorKeys = getLevelDecorKeys(storehouse.progress.level.index);
 
   // Bought animals and items live up near the sky, fenced off from
   // everyone's trees and the lamb below.
@@ -204,6 +243,13 @@ export default function GroupGardenScreen() {
     );
   }
 
+  const maxGivableAmount = drops.balance;
+  const customDepositValue = parseInt(customDepositText, 10);
+  const effectiveDepositAmount =
+    depositAmount !== null ? depositAmount : Number.isFinite(customDepositValue) ? customDepositValue : null;
+  const canGiveDrops =
+    effectiveDepositAmount !== null && effectiveDepositAmount > 0 && effectiveDepositAmount <= maxGivableAmount;
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -220,7 +266,7 @@ export default function GroupGardenScreen() {
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       <View style={styles.topRow}>
-        <View>
+        <View style={styles.topRowText}>
           <Text style={styles.title}>Our garden</Text>
           <Text style={styles.subtitle}>{group.name}</Text>
         </View>
@@ -234,6 +280,11 @@ export default function GroupGardenScreen() {
         </View>
       </View>
 
+      <Pressable style={styles.levelRow} onPress={() => setOpenSheet('levels')}>
+        <Text style={styles.levelName}>🌿 {storehouse.progress.level.name}</Text>
+        <Text style={styles.levelVerse}>{storehouse.progress.level.verse}</Text>
+      </Pressable>
+
       <LambGuide
         id="garden"
         message={[
@@ -245,7 +296,15 @@ export default function GroupGardenScreen() {
       />
 
       <View style={[styles.scene, { height: sceneHeight }]}>
-        <View style={[styles.sky, { height: SKY_HEIGHT }]} />
+        <View style={[styles.sky, { height: SKY_HEIGHT }]}>
+          {decorKeys.length > 0 && (
+            <View style={styles.decorRow}>
+              {decorKeys.map((key) => (
+                <GardenLevelDecorSprite key={key} decorKey={key} pixelSize={1.8} />
+              ))}
+            </View>
+          )}
+        </View>
         <View style={styles.grassArea}>
           <View style={{ width: sceneWidth }}>
             <PixelGrid grid={groundGrid} pixelSize={GROUND_BAND_HEIGHT / 14} />
@@ -266,14 +325,55 @@ export default function GroupGardenScreen() {
         {slots.length > COLUMNS && <Text style={styles.scrollHint}>Scroll for more ↓</Text>}
       </View>
 
+      <View style={styles.storehouseCard}>
+        <View style={styles.storehouseTop}>
+          <Text style={styles.storehouseLabel}>🏺 Storehouse</Text>
+          {storehouse.progress.nextLevel ? (
+            <Text style={styles.storehouseValue}>
+              {storehouse.progress.intoTier} / {storehouse.progress.neededForNextTier} to{' '}
+              {storehouse.progress.nextLevel.name}
+            </Text>
+          ) : (
+            <Text style={styles.storehouseValue}>Highest level reached!</Text>
+          )}
+        </View>
+        <ProgressBar percent={storehouse.progress.tierPercent} />
+        {storehouse.givers.length > 0 && (
+          <Text style={styles.storehouseGivers} numberOfLines={2}>
+            Given by: {storehouse.givers.join(', ')}
+          </Text>
+        )}
+        <Pressable
+          style={styles.giveButton}
+          onPress={() => {
+            setDepositAmount(null);
+            setCustomDepositText('');
+            setOpenSheet('deposit');
+          }}
+        >
+          <Text style={styles.giveButtonText}>Give drops</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.iconRow}>
         <Pressable style={styles.iconButton} onPress={() => router.push(`/groups/${group.id}/shop`)}>
           <Text style={styles.iconGlyph}>▤</Text>
           <Text style={styles.iconLabel}>Shop</Text>
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => setOpenSheet('week')}>
-          <Text style={styles.iconGlyph}>📅</Text>
-          <Text style={styles.iconLabel}>This week</Text>
+        <Pressable style={styles.iconButton} onPress={() => setOpenSheet('levels')}>
+          <Text style={styles.iconGlyph}>🌿</Text>
+          <Text style={styles.iconLabel}>Upgrade</Text>
+        </Pressable>
+        <Pressable
+          style={styles.iconButton}
+          onPress={() => {
+            setDepositAmount(null);
+            setCustomDepositText('');
+            setOpenSheet('deposit');
+          }}
+        >
+          <Text style={styles.iconGlyph}>💧</Text>
+          <Text style={styles.iconLabel}>Deposit</Text>
         </Pressable>
         <Pressable
           style={styles.iconButton}
@@ -315,22 +415,73 @@ export default function GroupGardenScreen() {
         </View>
       </InfoSheet>
 
-      <InfoSheet visible={openSheet === 'week'} title="This week" onClose={() => setOpenSheet(null)}>
-        <View style={styles.goalCard}>
-          <View style={styles.goalCardTop}>
-            <Text style={styles.goalLabel}>Our combined reading</Text>
-            <Text style={styles.goalValue}>
-              {weeklyGoal.daysRead} / {weeklyGoal.combinedTarget} reads
-            </Text>
-          </View>
-          <ProgressBar percent={weeklyGoal.percent} />
+      <InfoSheet visible={openSheet === 'levels'} title="Garden levels" onClose={() => setOpenSheet(null)}>
+        <ScrollView style={styles.levelsList}>
+          {GARDEN_LEVELS.map((level) => {
+            const reached = level.index <= storehouse.progress.level.index;
+            return (
+              <View key={level.key} style={[styles.levelListRow, !reached && styles.levelListRowLocked]}>
+                <Text style={[styles.levelListName, !reached && styles.levelListTextLocked]}>
+                  {reached ? '🌿' : '🔒'} {level.name}
+                </Text>
+                <Text style={[styles.levelListVerse, !reached && styles.levelListTextLocked]}>{level.verse}</Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </InfoSheet>
+
+      <InfoSheet visible={openSheet === 'deposit'} title="Give to the Storehouse" onClose={() => setOpenSheet(null)}>
+        <Text style={styles.depositBody}>
+          Give from your own balance of 💧 {drops.balance}. Once given, it can't be taken back.
+        </Text>
+        <View style={styles.depositChipRow}>
+          {DEPOSIT_QUICK_AMOUNTS.map((amount) => (
+            <Pressable
+              key={amount}
+              style={[styles.depositChip, depositAmount === amount && styles.depositChipSelected]}
+              onPress={() => {
+                setDepositAmount(amount);
+                setCustomDepositText('');
+              }}
+              disabled={amount > drops.balance}
+            >
+              <Text
+                style={[
+                  styles.depositChipText,
+                  depositAmount === amount && styles.depositChipTextSelected,
+                  amount > drops.balance && styles.depositChipTextDisabled,
+                ]}
+              >
+                {amount}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            style={[styles.depositChip, depositAmount === null && customDepositText !== '' && styles.depositChipSelected]}
+            onPress={() => setDepositAmount(null)}
+          >
+            <Text style={styles.depositChipText}>Custom</Text>
+          </Pressable>
         </View>
-        {weeklyGoal.meetsHarvestThreshold && (
-          <View style={styles.harvestCard}>
-            <Text style={styles.harvestTitle}>🌾 Our garden bore fruit this week!</Text>
-            <Text style={styles.harvestBody}>Time for a Harvest Supper — meet up and share what you've read.</Text>
-          </View>
+        {depositAmount === null && (
+          <TextInput
+            style={styles.depositInput}
+            value={customDepositText}
+            onChangeText={setCustomDepositText}
+            placeholder={`Up to ${maxGivableAmount}`}
+            keyboardType="number-pad"
+          />
         )}
+        <Pressable
+          style={[styles.sheetPrimaryButton, (!canGiveDrops || depositing) && styles.giveButtonDisabled]}
+          onPress={handleGiveDrops}
+          disabled={!canGiveDrops || depositing}
+        >
+          <Text style={styles.sheetPrimaryButtonText}>
+            {depositing ? 'Giving…' : effectiveDepositAmount ? `Give ${effectiveDepositAmount} drops` : 'Give drops'}
+          </Text>
+        </Pressable>
       </InfoSheet>
 
       <InfoSheet visible={openSheet === 'leave'} title="Leave this group" onClose={() => setOpenSheet(null)}>
@@ -358,6 +509,8 @@ export default function GroupGardenScreen() {
           <Text style={styles.leaveButtonText}>{leaving ? 'Leaving…' : `Leave ${group.name}`}</Text>
         </Pressable>
       </InfoSheet>
+
+      <LevelUpCelebration level={celebratingLevel} onDismiss={() => setCelebratingLevel(null)} />
     </ScrollView>
   );
 }
@@ -395,6 +548,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  topRowText: {
+    flex: 1,
   },
   title: {
     fontSize: 20,
@@ -439,6 +595,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
   },
+  levelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  levelName: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  levelVerse: {
+    fontFamily: FONTS.serifItalic,
+    fontSize: 11,
+    color: COLORS.sageDark,
+  },
   scene: {
     width: '100%',
     borderWidth: 2,
@@ -452,6 +623,14 @@ const styles = StyleSheet.create({
   sky: {
     width: '100%',
     backgroundColor: COLORS.sky,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  decorRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
   grassArea: {
     flex: 1,
@@ -510,10 +689,54 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.textMuted,
   },
+  storehouseCard: {
+    ...HARD_SHADOW,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    backgroundColor: COLORS.white,
+    padding: 12,
+    gap: 8,
+  },
+  storehouseTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  storehouseLabel: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  storehouseValue: {
+    fontFamily: FONTS.serif,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  storehouseGivers: {
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  giveButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.sage,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  giveButtonDisabled: {
+    backgroundColor: COLORS.cream,
+    opacity: 0.6,
+  },
+  giveButtonText: {
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   iconButton: {
     ...buttonBase,
@@ -592,6 +815,74 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textPrimary,
   },
+  levelsList: {
+    maxHeight: 360,
+  },
+  levelListRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  levelListRowLocked: {
+    opacity: 0.45,
+  },
+  levelListName: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  levelListVerse: {
+    marginTop: 2,
+    fontFamily: FONTS.serifItalic,
+    fontSize: 12,
+    color: COLORS.sageDark,
+  },
+  levelListTextLocked: {
+    color: COLORS.textMuted,
+  },
+  depositBody: {
+    fontFamily: FONTS.serif,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+    lineHeight: 19,
+  },
+  depositChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  depositChip: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.white,
+  },
+  depositChipSelected: {
+    backgroundColor: COLORS.sage,
+  },
+  depositChipText: {
+    fontFamily: FONTS.headingMedium,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  depositChipTextSelected: {
+    color: COLORS.textPrimary,
+  },
+  depositChipTextDisabled: {
+    color: COLORS.textMuted,
+  },
+  depositInput: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.white,
+    fontFamily: FONTS.serif,
+    color: COLORS.textPrimary,
+  },
   leaveBody: {
     fontFamily: FONTS.serif,
     fontSize: 13,
@@ -625,45 +916,5 @@ const styles = StyleSheet.create({
   leaveButtonText: {
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
-  },
-  goalCard: {
-    gap: 6,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    padding: 10,
-    backgroundColor: COLORS.cream,
-  },
-  goalCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  goalLabel: {
-    fontFamily: FONTS.serif,
-    fontSize: 11,
-    color: COLORS.textMuted,
-  },
-  goalValue: {
-    fontFamily: FONTS.headingSemiBold,
-    fontSize: 13,
-    color: COLORS.textPrimary,
-  },
-  harvestCard: {
-    backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    padding: 12,
-    gap: 4,
-  },
-  harvestTitle: {
-    fontFamily: FONTS.headingSemiBold,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-  },
-  harvestBody: {
-    fontFamily: FONTS.serif,
-    color: COLORS.textMuted,
   },
 });
