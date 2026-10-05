@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -5,7 +6,10 @@ import { Badge } from '../../components/pixel/Badge';
 import type { BadgeTier } from '../../components/pixel/badge-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { LambGuide } from '../../components/guide/LambGuide';
+import { DailyDrops } from '../../components/today/DailyDrops';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
+import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummary } from '../../lib/daily-drops';
+import { getMyDashboard } from '../../lib/dashboard';
 import { getDropsSummary, type DropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
 import { SECTION_LABELS } from '../../lib/mission-config';
@@ -70,14 +74,25 @@ function MissionCard({ mission }: { mission: MissionProgress }) {
 export default function MissionsScreen() {
   const [drops, setDrops] = useState<DropsSummary | null>(null);
   const [missions, setMissions] = useState<MissionSummary | null>(null);
+  const [dailyDrops, setDailyDrops] = useState<DailyDropsSummary | null>(null);
+  const [waitingGroupId, setWaitingGroupId] = useState<string | null>(null);
+  const [justCollectedFirst, setJustCollectedFirst] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [dropsSummary, missionSummary] = await Promise.all([getDropsSummary(), getMissionSummary()]);
+      const [dropsSummary, missionSummary, myDailyDrops, myDashboard] = await Promise.all([
+        getDropsSummary(),
+        getMissionSummary(),
+        getDailyDrops(),
+        getMyDashboard(),
+      ]);
       setDrops(dropsSummary);
       setMissions(missionSummary);
+      setDailyDrops(myDailyDrops);
+      const waitingGroup = myDashboard.groups.find((row) => !row.checkedInToday);
+      setWaitingGroupId(waitingGroup ? waitingGroup.group.id : null);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -89,6 +104,37 @@ export default function MissionsScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleCollect(key: DailyDropKey) {
+    if (!dailyDrops || !drops) return;
+    const row = dailyDrops.rows.find((r) => r.key === key);
+    if (!row || row.status !== 'collect') return;
+
+    const wasFirstOfDay = dailyDrops.collectedCount === 0;
+    const updatedRows = dailyDrops.rows.map((r) => (r.key === key ? { ...r, status: 'collected' as const } : r));
+    const updatedCollectedCount = dailyDrops.collectedCount + 1;
+    setDailyDrops({
+      rows: updatedRows,
+      collectedCount: updatedCollectedCount,
+      allCollected: updatedCollectedCount === updatedRows.length,
+    });
+    setDrops({ ...drops, balance: drops.balance + row.reward });
+    if (wasFirstOfDay) setJustCollectedFirst(true);
+
+    try {
+      await claimDailyDrop(key);
+    } catch {
+      // Resync with the server rather than leaving an optimistic state that
+      // might not match (e.g. the request actually failed).
+      load();
+    }
+  }
+
+  function handleDailyBreadPress() {
+    if (waitingGroupId) {
+      router.push(`/groups/${waitingGroupId}/bible`);
+    }
+  }
 
   if (!drops || !missions) {
     return (
@@ -135,14 +181,28 @@ export default function MissionsScreen() {
 
       <LambGuide
         id="missions"
-        message={[
-          'Complete missions to earn bonus drops for any garden.',
-          'Your reading across every group counts here.',
-          'Small goals add up — keep going!',
-        ]}
+        message={
+          justCollectedFirst
+            ? 'Fresh manna for today!'
+            : [
+                'Complete missions to earn bonus drops for any garden.',
+                'Your reading across every group counts here.',
+                'Small goals add up — keep going!',
+              ]
+        }
         pose="happy"
+        sparkles={justCollectedFirst}
         style={styles.lambGuide}
       />
+
+      {dailyDrops && (
+        <DailyDrops
+          rows={dailyDrops.rows}
+          allCollected={dailyDrops.allCollected}
+          onCollect={handleCollect}
+          onDailyBreadPress={handleDailyBreadPress}
+        />
+      )}
 
       {missions.sections.map(({ section, missions: sectionMissions }) => (
         <View key={section}>

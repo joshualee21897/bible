@@ -50,8 +50,8 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - You can spend your drops in any group's shop. The item you buy joins that group's shared garden, but it's paid for from your own balance — so several people can each contribute items to the same garden using their own progress.
 - Compute the balance from the data every time (daily_claims + mission progress + purchases), never store the balance itself, so it can't drift out of sync.
 
-### Daily drops (Today tab)
-- A "Daily drops" section on the Today tab, between "Today's reading" and "This week" — six small once-a-day tasks, each with a name, a verse reference, and a reward. Defined in `lib/mission-config.ts` (`DAILY_DROPS`).
+### Daily drops (Missions tab)
+- A "Daily drops" section at the top of the Missions tab, above the mission sections — six small once-a-day tasks, each with a name, a verse reference, and a reward. Defined in `lib/mission-config.ts` (`DAILY_DROPS`).
 - Resets at midnight in the person's own local time.
 - Each row shows one of three states: **Growing** (not done yet, soft/disabled), **Collect** (done, tap to claim — sage green), **Collected ✓** (claimed today, muted). Tapping "Growing" on Daily Bread takes you to the group with today's unread chapter.
 - Tapping "Collect" adds the reward to the balance with a small animation. Each row can only be claimed once per day, even across devices — enforced by a `daily_claims` table (user_id, claim_key, claim_date) with a unique constraint, which Supabase checks for us.
@@ -110,7 +110,7 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, a small kind tag, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
 5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the viewer's own drop balance, and a shop button.
 6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
-7. **Missions:** a global tab (not per group) with bonus ways to earn drops — this week/month goals and lifetime milestone badges, counted across all your groups.
+7. **Missions:** a global tab (not per group) with bonus ways to earn drops — Daily drops at the top, then this week/month goals and lifetime milestone badges, counted across all your groups.
 8. **Profile:** name and avatar color. Sign out.
 
 ## Database (Supabase)

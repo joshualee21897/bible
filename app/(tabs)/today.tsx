@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../components/guide/LambGuide';
-import { DailyDrops } from '../../components/today/DailyDrops';
 import { MonthCalendar } from '../../components/today/MonthCalendar';
 import { WeekStrip } from '../../components/today/WeekStrip';
 import { Avatar } from '../../components/pixel/Avatar';
@@ -11,7 +10,6 @@ import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
-import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummary } from '../../lib/daily-drops';
 import { getMyDashboard, type MyDashboard, type MyGroupToday } from '../../lib/dashboard';
 import { getDropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
@@ -38,15 +36,10 @@ function pluralize(count: number, noun: string): string {
 function buildLambGuide(
   dashboard: MyDashboard,
   stage: TreeStage,
-  grewStage: boolean,
-  justCollectedFirst: boolean
+  grewStage: boolean
 ): { message: string; pose: LambMood; sparkles: boolean } {
   if (grewStage) {
     return { message: 'Your tree just grew! Keep going.', pose: 'happy', sparkles: true };
-  }
-
-  if (justCollectedFirst) {
-    return { message: 'Fresh manna for today!', pose: 'happy', sparkles: true };
   }
 
   const groupThatBoreFruit = dashboard.groups.find((row) => row.meetsHarvestThreshold);
@@ -100,23 +93,20 @@ function groupPulseText(pulse: GroupPulse | undefined): string {
 export default function TodayDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
-  const [dailyDrops, setDailyDrops] = useState<DailyDropsSummary | null>(null);
   const [balance, setBalance] = useState(0);
   const [amenCounts, setAmenCounts] = useState<Record<string, number>>({});
   const [groupPulses, setGroupPulses] = useState<Record<string, GroupPulse>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [grewStage, setGrewStage] = useState(false);
-  const [justCollectedFirst, setJustCollectedFirst] = useState(false);
   const [monthExpanded, setMonthExpanded] = useState(false);
   const previousStageRef = useRef<TreeStage | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [myProfile, myDashboard, myDailyDrops, dropsSummary] = await Promise.all([
+      const [myProfile, myDashboard, dropsSummary] = await Promise.all([
         getMyProfile(),
         getMyDashboard(),
-        getDailyDrops(),
         getDropsSummary(),
       ]);
       const newStage = getTreeStage(myDashboard.totalCheckins);
@@ -128,7 +118,6 @@ export default function TodayDashboard() {
 
       setProfile(myProfile);
       setDashboard(myDashboard);
-      setDailyDrops(myDailyDrops);
       setBalance(dropsSummary.balance);
       setErrorMessage(null);
 
@@ -175,40 +164,7 @@ export default function TodayDashboard() {
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
   const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
-  const lambGuide = buildLambGuide(dashboard, stage, grewStage, justCollectedFirst);
-
-  async function handleCollect(key: DailyDropKey) {
-    if (!dailyDrops) return;
-    const row = dailyDrops.rows.find((r) => r.key === key);
-    if (!row || row.status !== 'collect') return;
-
-    const wasFirstOfDay = dailyDrops.collectedCount === 0;
-    const updatedRows = dailyDrops.rows.map((r) => (r.key === key ? { ...r, status: 'collected' as const } : r));
-    const updatedCollectedCount = dailyDrops.collectedCount + 1;
-    setDailyDrops({
-      rows: updatedRows,
-      collectedCount: updatedCollectedCount,
-      allCollected: updatedCollectedCount === updatedRows.length,
-    });
-    setBalance((prev) => prev + row.reward);
-    if (wasFirstOfDay) setJustCollectedFirst(true);
-
-    try {
-      await claimDailyDrop(key);
-    } catch {
-      // Resync with the server rather than leaving an optimistic state that
-      // might not match (e.g. the request actually failed).
-      load();
-    }
-  }
-
-  function handleDailyBreadPress() {
-    if (!dashboard) return;
-    const waitingGroup = dashboard.groups.find((row) => !row.checkedInToday);
-    if (waitingGroup) {
-      router.push(`/groups/${waitingGroup.group.id}/bible`);
-    }
-  }
+  const lambGuide = buildLambGuide(dashboard, stage, grewStage);
 
   function renderReadingRow(row: MyGroupToday) {
     const amenCount = row.todayCheckinId ? (amenCounts[row.todayCheckinId] ?? 0) : 0;
@@ -273,15 +229,6 @@ export default function TodayDashboard() {
           {dashboard.groups.map(renderReadingRow)}
         </View>
       </View>
-
-      {dailyDrops && (
-        <DailyDrops
-          rows={dailyDrops.rows}
-          allCollected={dailyDrops.allCollected}
-          onCollect={handleCollect}
-          onDailyBreadPress={handleDailyBreadPress}
-        />
-      )}
 
       <View style={styles.card}>
         <View style={styles.myTreeRow}>
