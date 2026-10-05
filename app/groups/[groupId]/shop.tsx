@@ -37,7 +37,7 @@ export default function ShopScreen() {
   const load = useCallback(async () => {
     if (!group) return;
     try {
-      const [summary, ownedKeys] = await Promise.all([getDropsSummary(group.id), getOwnedItemKeys(group.id)]);
+      const [summary, ownedKeys] = await Promise.all([getDropsSummary(), getOwnedItemKeys(group.id)]);
       setDrops(summary);
       setOwned(ownedKeys);
       setErrorMessage(null);
@@ -65,7 +65,7 @@ export default function ShopScreen() {
   async function handleBuy(itemKey: string, price: number) {
     if (!group || !session || !drops) return;
     if (drops.balance < price) {
-      showAlert('Not enough drops', "Your group needs more drops to buy this. Keep reading to earn more!");
+      showAlert('Not enough drops', 'You need more drops to buy this. Keep reading to earn more!');
       return;
     }
 
@@ -122,8 +122,8 @@ export default function ShopScreen() {
       <LambGuide
         id="shop"
         message={[
-          'Spend our drops on gifts for the garden. Each one has a verse.',
-          "Everyone's reading fills the same drop balance.",
+          'Spend your drops on gifts for this garden. Each one has a verse.',
+          'Your reading — in any group — fills your own drop balance.',
           'Each gift comes with a little piece of scripture.',
         ]}
         pose="happy"
@@ -131,7 +131,7 @@ export default function ShopScreen() {
       />
 
       <View style={styles.shopNote}>
-        <Text style={styles.shopNoteText}>▤ Drops are shared by our whole group.</Text>
+        <Text style={styles.shopNoteText}>▤ These are your drops — spend them on any group's garden.</Text>
       </View>
 
       <View style={styles.filterRow}>

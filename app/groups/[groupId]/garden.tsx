@@ -47,7 +47,7 @@ export default function GroupGardenScreen() {
 
       const [stats, dropsSummary, owned, goalSummary, checkedChapters] = await Promise.all([
         getGroupMembersWithCheckinCounts(group.id),
-        getDropsSummary(group.id),
+        getDropsSummary(),
         getOwnedItemKeys(group.id),
         getWeeklyGoalSummary(group.id, group.weekly_target),
         getMyCheckedChapters(group.id, group.book),
@@ -160,6 +160,7 @@ export default function GroupGardenScreen() {
           </View>
           <View style={styles.balanceBadge}>
             <Text style={styles.balance}>💧 {drops.balance}</Text>
+            <Text style={styles.balanceCaption}>yours to spend</Text>
           </View>
         </View>
 
@@ -342,12 +343,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.water,
     paddingVertical: 6,
     paddingHorizontal: 10,
+    alignItems: 'center',
     ...HARD_SHADOW,
   },
   balance: {
     fontFamily: FONTS.headingSemiBold,
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  balanceCaption: {
+    fontFamily: FONTS.serif,
+    fontSize: 9,
+    color: COLORS.textMuted,
   },
   shopButton: {
     ...buttonBase,

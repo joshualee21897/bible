@@ -45,10 +45,17 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 
 - If someone hasn't checked in for 3+ days, their tree shows as **resting** (sleepy, softer colors). It never shrinks, wilts, or dies. It wakes up on their next check-in.
 
-### Water drops (currency, per group)
-- Reading a chapter earns 10 drops.
-- Adding a reflection earns +3, and adding a photo earns +3.
-- Drops are spent on shared garden items, so everyone chips in together.
+### Water drops (currency, per person)
+- Reading a chapter earns 10 drops. Adding a reflection earns +3, and adding a photo earns +3.
+- Drops belong to the person, not the group — your balance is everything you've earned from your own check-ins across *every* group you're in, plus mission bonuses (see below), minus everything you've personally spent.
+- You can spend your drops in any group's shop. The item you buy joins that group's shared garden, but it's paid for from your own balance — so several people can each contribute items to the same garden using their own progress.
+- Compute the balance from the data every time (checkins + mission progress + purchases), never store it, so it can't drift out of sync.
+
+### Missions (bonus ways to earn drops)
+- A dedicated "Missions" tab (bottom nav, next to Read and Groups) — personal, not tied to one group. It counts your reading across every group combined.
+- **This week / this month:** e.g. "Read 5 days this week," "Read 15 days this month." These reset each period, but once you've earned a period's bonus it stays in your balance for good — it doesn't get taken back when the period ends.
+- **Milestone badges** (one-time, lifetime): e.g. total chapters read (10/25/50), reflections posted, finishing a whole book start to end, sharing your first prayer request.
+- All mission rewards and targets live in one config file (`lib/mission-config.ts`) so they're easy to tune. No separate database table — everything is computed live from check-ins/reflections/prayers, same as the drops balance.
 
 ### Garden animals and items (bought with drops; show the verse when unlocked)
 | Item | Verse | Price |
@@ -91,9 +98,10 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
    - After checking in, optional "Add a reflection."
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
 4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, reflection, and photo. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
-5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the drop balance, and a shop button.
-6. **Shop:** buy animals and items with group drops. Show the verse when bought.
-7. **Profile:** name and avatar color. Sign out.
+5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the viewer's own drop balance, and a shop button.
+6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
+7. **Missions:** a global tab (not per group) with bonus ways to earn drops — this week/month goals and lifetime milestone badges, counted across all your groups.
+8. **Profile:** name and avatar color. Sign out.
 
 ## Database (Supabase)
 Write these as SQL migrations I can run in the Supabase SQL editor.
@@ -150,7 +158,7 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 - Deploy to Vercel, with instructions for "Add to Home Screen" on iPhone and Android.
 
 ### Phase 2 — Garden game
-- Water drops, the shop, animals and items with verses, resting trees, lamb moods, the weekly goal bar, and the Harvest Supper card.
+- Water drops, the shop, animals and items with verses, resting trees, lamb moods, the weekly goal bar, the Harvest Supper card, and the Missions tab.
 
 ### Phase 3 — Real phone app
 - EAS Build, TestFlight (iOS) and Play internal testing (Android).

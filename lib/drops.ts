@@ -1,4 +1,5 @@
 import { getGardenItem } from './garden-items';
+import { getMissionSummary } from './missions';
 import { supabase } from './supabase';
 
 export type DropsSummary = {
@@ -7,34 +8,45 @@ export type DropsSummary = {
   balance: number;
 };
 
-async function getGroupItemKeys(groupId: string): Promise<string[]> {
-  const { data, error } = await supabase.from('group_items').select('item_key').eq('group_id', groupId);
+async function requireUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
-  return (data ?? []).map((row) => row.item_key);
+  if (!data.user) throw new Error('Not signed in');
+  return data.user.id;
 }
 
 export async function getOwnedItemKeys(groupId: string): Promise<Set<string>> {
-  return new Set(await getGroupItemKeys(groupId));
+  const { data, error } = await supabase.from('group_items').select('item_key').eq('group_id', groupId);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.item_key));
 }
 
-// Drops are always computed from check-ins and purchases, never stored, so
-// the balance can't drift out of sync with the data.
-export async function getDropsSummary(groupId: string): Promise<DropsSummary> {
-  const [checkinsResult, itemKeys] = await Promise.all([
-    supabase.from('checkins').select('reflection, photo_path').eq('group_id', groupId),
-    getGroupItemKeys(groupId),
+// Drops are personal: everything you've earned from your own check-ins
+// across every group you're in, plus mission bonuses, minus everything
+// you've spent in any group's shop. Always computed fresh from the data,
+// never stored, so it can't drift out of sync.
+export async function getDropsSummary(): Promise<DropsSummary> {
+  const userId = await requireUserId();
+
+  const [checkinsResult, spentResult, missionSummary] = await Promise.all([
+    supabase.from('checkins').select('reflection, photo_path').eq('user_id', userId),
+    supabase.from('group_items').select('item_key').eq('bought_by', userId),
+    getMissionSummary(),
   ]);
 
   if (checkinsResult.error) throw checkinsResult.error;
+  if (spentResult.error) throw spentResult.error;
 
-  const earned = (checkinsResult.data ?? []).reduce((total, checkin) => {
+  const earnedFromReading = (checkinsResult.data ?? []).reduce((total, checkin) => {
     let amount = 10;
     if (checkin.reflection) amount += 3;
     if (checkin.photo_path) amount += 3;
     return total + amount;
   }, 0);
 
-  const spent = itemKeys.reduce((total, key) => total + (getGardenItem(key)?.price ?? 0), 0);
+  const earned = earnedFromReading + missionSummary.bonusDropsEarned;
+
+  const spent = (spentResult.data ?? []).reduce((total, row) => total + (getGardenItem(row.item_key)?.price ?? 0), 0);
 
   return { earned, spent, balance: earned - spent };
 }
