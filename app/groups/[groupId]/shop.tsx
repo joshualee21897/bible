@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import { InfoSheet } from '../../../components/garden/InfoSheet';
-import { LambGuide } from '../../../components/guide/LambGuide';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
@@ -21,6 +20,7 @@ import { buyGardenItem, getDropsSummary, getGroupItemCounts, type DropsSummary }
 import { getErrorMessage } from '../../../lib/error-message';
 import { GARDEN_ITEMS, isItemAvailableThisMonth, type GardenItem, type GardenItemKind } from '../../../lib/garden-items';
 import { useGroup } from '../../../lib/group-context';
+import { useLambMessage } from '../../../lib/lamb-overlay-context';
 import { getVerseText } from '../../../lib/verse-lookup';
 
 type CategoryFilter = 'all' | GardenItemKind;
@@ -59,6 +59,8 @@ export default function ShopScreen() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [hideOwned, setHideOwned] = useState(false);
   const [detailItem, setDetailItem] = useState<GardenItem | null>(null);
+
+  useLambMessage({ id: 'shop', message: 'Each gift has a verse — pick one for our garden!', pose: 'happy' });
 
   const contentWidth = Math.min(windowWidth, 600);
   const numColumns = contentWidth >= 420 ? 3 : 2;
@@ -152,7 +154,6 @@ export default function ShopScreen() {
         <View style={styles.header}>
           <View style={styles.headerTextBlock}>
             <Text style={styles.title}>Garden shop</Text>
-            <LambGuide id="shop" message="Each gift has a verse — pick one for our garden!" pose="happy" />
           </View>
           <View style={styles.balanceBadge}>
             <Text style={styles.balanceText}>💧 {drops.balance}</Text>

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { LambGuide } from '../guide/LambGuide';
 import { Tree } from '../pixel/Tree';
 import { COLORS, FONTS, HARD_SHADOW } from '../theme';
 import { getGroupFeed, getGroupMembersWithCheckinCounts, type CheckinWithProfile } from '../../lib/checkins';
 import { getErrorMessage } from '../../lib/error-message';
 import { GARDEN_LEVELS } from '../../lib/garden-levels';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { addReaction, getReactionsFor, removeReaction } from '../../lib/reactions';
 import { getLevelEvents, type LevelEvent } from '../../lib/storehouse';
 import { timeAgo } from '../../lib/time-ago';
@@ -23,6 +23,12 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
   const [myAmens, setMyAmens] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useLambMessage({
+    id: 'feed-reflections',
+    message: "See what everyone's learning. Tap Amen to agree.",
+    pose: 'happy',
+  });
 
   const load = useCallback(async () => {
     try {
@@ -95,16 +101,6 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
 
   return (
     <View style={styles.container}>
-      <LambGuide
-        id="feed-reflections"
-        message={[
-          "See what everyone's learning. Tap Amen to agree.",
-          'Every reflection helps the group grow together.',
-          'A quick Amen means a lot to someone who shared.',
-        ]}
-        pose="happy"
-        style={styles.lambGuide}
-      />
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
       <FlatList
         data={rows ?? []}
@@ -172,9 +168,6 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  lambGuide: {
-    marginBottom: 12,
   },
   center: {
     flex: 1,

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { LambGuide } from '../../../components/guide/LambGuide';
 import { BookPickerSheet } from '../../../components/read/BookPickerSheet';
 import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
@@ -21,6 +20,7 @@ import {
 import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
+import { useLambMessage } from '../../../lib/lamb-overlay-context';
 
 const MIN_REFLECTION_LENGTH = 10;
 
@@ -48,6 +48,22 @@ export default function BibleScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [justCheckedIn, setJustCheckedIn] = useState(false);
   const [bookJustFinished, setBookJustFinished] = useState<string | null>(null);
+
+  useLambMessage(
+    bookJustFinished
+      ? {
+          id: 'bible-book-finished',
+          message: `You finished ${bookJustFinished}! Well done, good and faithful servant.`,
+          pose: 'happy',
+          sparkles: true,
+          actions: [{ label: 'Amen', primary: true, onPress: () => setBookJustFinished(null) }],
+        }
+      : justCheckedIn
+        ? { id: 'bible-celebration', message: 'Well done, good and faithful servant.', pose: 'happy', sparkles: true }
+        : !currentCheckin
+          ? { id: 'bible', message: 'Read, then share one thing God put on your heart.', pose: 'pointing' }
+          : null
+  );
 
   // Re-anchor to today's chapter whenever the group's book or start date
   // actually changes (initial load, or after picking a new book) — but not
@@ -212,28 +228,6 @@ export default function BibleScreen() {
           </View>
         )}
       </View>
-
-      {!currentCheckin && (
-        <LambGuide
-          id="bible"
-          message="Read, then share one thing God put on your heart."
-          pose="pointing"
-        />
-      )}
-
-      {bookJustFinished && (
-        <LambGuide
-          id="bible-book-finished"
-          message={`You finished ${bookJustFinished}! Well done, good and faithful servant.`}
-          pose="happy"
-          sparkles
-          actions={[{ label: 'Amen', primary: true, onPress: () => setBookJustFinished(null) }]}
-        />
-      )}
-
-      {justCheckedIn && !bookJustFinished && (
-        <LambGuide id="bible-celebration" message="Well done, good and faithful servant." pose="happy" sparkles />
-      )}
 
       {!loading && (
         <View style={editable ? styles.checkInSection : styles.afterReadSection}>

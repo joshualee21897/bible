@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-import { LambGuide } from '../guide/LambGuide';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { buttonBase, COLORS, FONTS } from '../theme';
 
 type Props = {
@@ -14,6 +14,10 @@ type Props = {
 export function NewPrayerSheet({ visible, submitting, onClose, onSubmit }: Props) {
   const [text, setText] = useState('');
   const [showName, setShowName] = useState(true);
+
+  useLambMessage(
+    visible ? { id: 'new-prayer-sheet', message: 'Only your group can see this.', pose: 'praying' } : null
+  );
 
   useEffect(() => {
     if (visible) {
@@ -33,15 +37,6 @@ export function NewPrayerSheet({ visible, submitting, onClose, onSubmit }: Props
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <Text style={styles.title}>Share a prayer request</Text>
-        <LambGuide
-          id="new-prayer-sheet"
-          message={[
-            'Only your group can see this.',
-            'Share your name or stay anonymous — your choice.',
-            'Even a short prayer means a lot.',
-          ]}
-          pose="praying"
-        />
         <TextInput
           style={styles.input}
           placeholder="What's on your heart?"

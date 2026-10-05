@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { LambGuide } from '../../components/guide/LambGuide';
 import { MonthCalendar } from '../../components/today/MonthCalendar';
 import { WeekStrip } from '../../components/today/WeekStrip';
 import { Avatar } from '../../components/pixel/Avatar';
@@ -15,6 +14,7 @@ import { getDropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
 import { getGroupPulses, type GroupPulse } from '../../lib/group-pulse';
 import { getMyProfile, type Profile } from '../../lib/profile';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { getReactionsFor } from '../../lib/reactions';
 import {
   getNextStage,
@@ -109,6 +109,15 @@ export default function TodayDashboard() {
   const [monthExpanded, setMonthExpanded] = useState(false);
   const previousStageRef = useRef<TreeStage | null>(null);
 
+  useLambMessage(
+    dashboard
+      ? (() => {
+          const guide = buildLambGuide(dashboard, getTreeStage(dashboard.totalCheckins), grewStage);
+          return { id: 'today', message: guide.message, pose: guide.pose, sparkles: guide.sparkles };
+        })()
+      : null
+  );
+
   const load = useCallback(async () => {
     try {
       const [myProfile, myDashboard, dropsSummary] = await Promise.all([
@@ -172,7 +181,6 @@ export default function TodayDashboard() {
   const nextStage = getNextStage(dashboard.totalCheckins);
   const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
   const stageSegments = getStageSegments(dashboard.totalCheckins);
-  const lambGuide = buildLambGuide(dashboard, stage, grewStage);
 
   function renderReadingRow(row: MyGroupToday) {
     const amenCount = row.todayCheckinId ? (amenCounts[row.todayCheckinId] ?? 0) : 0;
@@ -228,7 +236,6 @@ export default function TodayDashboard() {
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       <View style={styles.heroCard}>
-        <LambGuide id="today" message={lambGuide.message} pose={lambGuide.pose} sparkles={lambGuide.sparkles} />
         <Text style={styles.heroTitle}>Today's reading</Text>
         <View style={styles.readingList}>
           {dashboard.groups.length === 0 && (

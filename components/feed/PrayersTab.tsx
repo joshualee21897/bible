@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { LambGuide } from '../guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../theme';
 import { showAlert } from '../../lib/alert';
 import { useAuth } from '../../lib/auth-context';
 import { getErrorMessage } from '../../lib/error-message';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { createPrayer, getGroupPrayers, markPrayerAnswered, type PrayerWithProfile } from '../../lib/prayers';
 import { addReaction, getReactionsFor, removeReaction } from '../../lib/reactions';
 import { timeAgo } from '../../lib/time-ago';
@@ -20,6 +20,12 @@ export function PrayersTab({ groupId }: { groupId: string }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useLambMessage({
+    id: 'feed-prayers',
+    message: "Share what's on your heart. We'll pray together.",
+    pose: 'praying',
+  });
 
   const load = useCallback(async () => {
     try {
@@ -103,16 +109,6 @@ export function PrayersTab({ groupId }: { groupId: string }) {
 
   return (
     <View style={styles.container}>
-      <LambGuide
-        id="feed-prayers"
-        message={[
-          "Share what's on your heart. We'll pray together.",
-          'No request is too small to bring here.',
-          'Tap Praying for you to let someone know you care.',
-        ]}
-        pose="praying"
-        style={styles.lambGuide}
-      />
 
       <View style={styles.note}>
         <Text style={styles.noteText}>Prayers stay within this group.</Text>
@@ -185,9 +181,6 @@ export function PrayersTab({ groupId }: { groupId: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  lambGuide: {
-    marginBottom: 12,
   },
   center: {
     flex: 1,

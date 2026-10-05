@@ -15,7 +15,6 @@ import {
 
 import { InfoSheet } from '../../../components/garden/InfoSheet';
 import { LevelUpCelebration } from '../../../components/garden/LevelUpCelebration';
-import { LambGuide } from '../../../components/guide/LambGuide';
 import { buildFlatFence, buildFlatGround } from '../../../components/pixel/flat-ground';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { getLevelDecorKey, getLevelDecorKeys } from '../../../components/pixel/garden-level-decor';
@@ -36,6 +35,7 @@ import { GARDEN_LEVELS, type GardenLevelDef } from '../../../lib/garden-levels';
 import { leaveGroup } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
 import { getLambMood } from '../../../lib/lamb-mood';
+import { useLambMessage } from '../../../lib/lamb-overlay-context';
 import { getLastSeenLevel, setLastSeenLevel } from '../../../lib/level-celebration';
 import { depositToStorehouse, getStorehouseSummary, recordLevelsReached, type StorehouseSummary } from '../../../lib/storehouse';
 import { getTreeStage, getTreeStageLabel, isTreeResting } from '../../../lib/tree';
@@ -69,6 +69,12 @@ export default function GroupGardenScreen() {
   const [customDepositText, setCustomDepositText] = useState('');
   const [depositing, setDepositing] = useState(false);
   const [celebratingLevel, setCelebratingLevel] = useState<GardenLevelDef | null>(null);
+
+  useLambMessage({
+    id: 'garden',
+    message: 'Every chapter waters your tree. Watch our garden grow!',
+    pose: 'happy',
+  });
 
   const sceneHeight = Math.round(windowHeight * 0.75);
   const sceneWidth = windowWidth - 32;
@@ -292,16 +298,6 @@ export default function GroupGardenScreen() {
         <Text style={styles.levelName}>🌿 {storehouse.progress.level.name}</Text>
         <Text style={styles.levelVerse}>{storehouse.progress.level.verse}</Text>
       </Pressable>
-
-      <LambGuide
-        id="garden"
-        message={[
-          'Every chapter waters your tree. Watch our garden grow!',
-          'Resting trees are always welcome here.',
-          'Our garden grows a little with each check-in.',
-        ]}
-        pose="happy"
-      />
 
       <View style={[styles.scene, { height: sceneHeight }]}>
         <View style={[styles.sky, { height: SKY_HEIGHT }]}>

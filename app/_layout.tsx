@@ -10,9 +10,27 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { ActivityIndicator, View } from 'react-native';
 
-import { AuthProvider } from '../lib/auth-context';
+import { AuthProvider, useAuth } from '../lib/auth-context';
 import { COLORS } from '../components/theme';
-import { LambGuideProvider } from '../components/guide/guide-context';
+import { FloatingLamb } from '../components/guide/FloatingLamb';
+import { LambOverlayProvider } from '../lib/lamb-overlay-context';
+
+function AppChrome() {
+  const { session, loading } = useAuth();
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
+        <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
+        <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
+        <Stack.Screen name="highlights" options={{ headerShown: true, title: 'My highlights' }} />
+      </Stack>
+      {session && !loading && <FloatingLamb />}
+      <StatusBar style="auto" />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -33,15 +51,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <LambGuideProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
-          <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
-          <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
-          <Stack.Screen name="highlights" options={{ headerShown: true, title: 'My highlights' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </LambGuideProvider>
+      <LambOverlayProvider>
+        <AppChrome />
+      </LambOverlayProvider>
     </AuthProvider>
   );
 }

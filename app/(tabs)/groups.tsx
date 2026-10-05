@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { LambGuide } from '../../components/guide/LambGuide';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS } from '../../components/theme';
@@ -10,6 +9,7 @@ import { getChapterCount } from '../../lib/bible-books';
 import { getCurrentChapterNumber } from '../../lib/checkins';
 import { getErrorMessage } from '../../lib/error-message';
 import { listMyGroups, type MyGroup } from '../../lib/groups';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { getWeeklyGoalSummary, type WeeklyGoalSummary } from '../../lib/weekly-goal';
 
 type GroupRow = MyGroup & { summary: WeeklyGoalSummary; todayChapter: number; maxChapter: number };
@@ -18,6 +18,12 @@ export default function MyGroupsScreen() {
   const [groups, setGroups] = useState<GroupRow[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useLambMessage(
+    groups && groups.length > 0
+      ? { id: 'groups-list', message: 'Tap a group to read, share, and grow together.', pose: 'pointing' }
+      : null
+  );
 
   const load = useCallback(async () => {
     try {
@@ -56,19 +62,6 @@ export default function MyGroupsScreen() {
       </View>
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
-
-      {groups && groups.length > 0 && (
-        <LambGuide
-          id="groups-list"
-          message={[
-            'Tap a group to read, share, and grow together.',
-            'Every group has its own little garden waiting.',
-            "Pick a group below to see today's chapter.",
-          ]}
-          pose="pointing"
-          style={styles.lambGuide}
-        />
-      )}
 
       <FlatList
         data={groups ?? []}
@@ -148,9 +141,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
-  },
-  lambGuide: {
-    marginBottom: 14,
   },
   title: {
     fontSize: 26,

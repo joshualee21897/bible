@@ -159,6 +159,13 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
   - **Sleeping:** at night.
 - It's used in reminders, e.g., "The lamb is waiting by your tree."
 
+#### The lamb as a floating guide
+- Once signed in, a small lamb icon floats on top of every screen (`components/guide/FloatingLamb.tsx`) — not pinned to one spot in the layout, draggable anywhere on screen, and it stays where you leave it until you drag it again (resets to its default bottom-right spot on the next full app load, not saved to the device).
+- Tap it (a quick tap, not a drag) to open or close its speech bubble, which shows whatever tip, nudge, or celebration message fits the screen you're currently on (greetings on Today, "pick a group" on Groups, book-finished celebrations on the Bible tab, and so on).
+- Each screen just says what the lamb should say right now via `useLambMessage(...)` (`lib/lamb-overlay-context.tsx`) — the floating lamb itself is the only thing that actually renders the icon and bubble.
+- It still sparkles when it has something worth celebrating, and peeks open once per app load so first-time visitors notice it's tappable.
+- Sign-in and the loading splash screen don't have it — there's no per-screen message to show before you're inside the app.
+
 ## Wording rules (important)
 - Never use words like "loser," "failed," "missed," "streak lost," "wilted," or "dead."
 - Use "resting" for inactive trees.

@@ -5,12 +5,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { BookPickerSheet } from '../../components/read/BookPickerSheet';
 import { ChapterPickerSheet } from '../../components/read/ChapterPickerSheet';
 import { NoteSheet } from '../../components/read/NoteSheet';
-import { LambGuide } from '../../components/guide/LambGuide';
 import { COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { getChapterAnnotations, saveNote, setHighlight, type VerseAnnotation } from '../../lib/annotations';
 import { getChapterVerses } from '../../lib/bible';
 import { BIBLE_BOOKS, getChapterCount } from '../../lib/bible-books';
 import { getErrorMessage } from '../../lib/error-message';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { getLastRead, saveLastRead } from '../../lib/last-read';
 
 const HIGHLIGHT_COLORS = [
@@ -33,6 +33,12 @@ export default function ReadScreen() {
   const [savingNote, setSavingNote] = useState(false);
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
+
+  useLambMessage({
+    id: 'read',
+    message: 'Tap a verse to highlight it, or ✎ to add a note.',
+    pose: 'pointing',
+  });
   const [activeColor, setActiveColor] = useState<string>(COLORS.yellow);
 
   const maxChapter = getChapterCount(book);
@@ -136,17 +142,6 @@ export default function ReadScreen() {
           <Text style={styles.highlightsLinkText}>My highlights</Text>
         </Pressable>
       </View>
-
-      <LambGuide
-        id="read"
-        message={[
-          'Tap a verse to highlight it, or ✎ to add a note.',
-          'Your highlights and notes are just for you.',
-          'Browse any book, any chapter, anytime.',
-        ]}
-        pose="pointing"
-        style={styles.lambGuide}
-      />
 
       <View style={styles.colorRow}>
         {HIGHLIGHT_COLORS.map(({ key, color }) => (
@@ -288,9 +283,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingSemiBold,
     fontSize: 11,
     color: COLORS.textPrimary,
-  },
-  lambGuide: {
-    marginBottom: 12,
   },
   colorRow: {
     flexDirection: 'row',

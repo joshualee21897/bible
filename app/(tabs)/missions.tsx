@@ -5,7 +5,6 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { Badge } from '../../components/pixel/Badge';
 import type { BadgeTier } from '../../components/pixel/badge-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
-import { LambGuide } from '../../components/guide/LambGuide';
 import { DailyDrops } from '../../components/today/DailyDrops';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { showAlert } from '../../lib/alert';
@@ -13,6 +12,7 @@ import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummar
 import { getMyDashboard } from '../../lib/dashboard';
 import { getDropsSummary, type DropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
+import { useLambMessage } from '../../lib/lamb-overlay-context';
 import { SECTION_LABELS } from '../../lib/mission-config';
 import { claimMission, getMissionSummary, type MissionProgress, type MissionSummary } from '../../lib/missions';
 
@@ -98,6 +98,15 @@ export default function MissionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [collectingKey, setCollectingKey] = useState<string | null>(null);
+
+  useLambMessage({
+    id: 'missions',
+    message: justCollectedFirst
+      ? 'Fresh manna for today!'
+      : 'Complete missions to earn bonus drops for any garden.',
+    pose: 'happy',
+    sparkles: justCollectedFirst,
+  });
 
   const load = useCallback(async () => {
     try {
@@ -223,22 +232,6 @@ export default function MissionsScreen() {
 
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
-      <LambGuide
-        id="missions"
-        message={
-          justCollectedFirst
-            ? 'Fresh manna for today!'
-            : [
-                'Complete missions to earn bonus drops for any garden.',
-                'Your reading across every group counts here.',
-                'Small goals add up — keep going!',
-              ]
-        }
-        pose="happy"
-        sparkles={justCollectedFirst}
-        style={styles.lambGuide}
-      />
-
       {dailyDrops && (
         <DailyDrops
           rows={dailyDrops.rows}
@@ -331,9 +324,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.serif,
     fontSize: 9,
     color: COLORS.textMuted,
-  },
-  lambGuide: {
-    marginVertical: 4,
   },
   sectionLabel: {
     marginTop: 8,

@@ -3,12 +3,12 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookPickerSheet } from '../components/read/BookPickerSheet';
-import { LambGuide } from '../components/guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
 import { getErrorMessage } from '../lib/error-message';
 import { createGroup } from '../lib/groups';
+import { useLambMessage } from '../lib/lamb-overlay-context';
 
 function todayAsInputDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,6 +22,12 @@ export default function CreateGroupScreen() {
   const [saving, setSaving] = useState(false);
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const submittingRef = useRef(false);
+
+  useLambMessage({
+    id: 'create-group',
+    message: 'Pick a book and invite friends with the code.',
+    pose: 'happy',
+  });
 
   async function handleCreate() {
     // A plain ref check, not just the `saving` state — a fast double-tap can
@@ -64,17 +70,6 @@ export default function CreateGroupScreen() {
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create a group</Text>
-
-      <LambGuide
-        id="create-group"
-        message={[
-          'Pick a book and invite friends with the code.',
-          "Share the invite code once your group is ready.",
-          'Any book, any pace — just pick a starting point.',
-        ]}
-        pose="happy"
-        style={styles.lambGuide}
-      />
 
       <Text style={styles.label}>Group name</Text>
       <TextInput style={styles.input} placeholder="e.g. Cell group" value={name} onChangeText={setName} />
@@ -129,9 +124,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
     color: COLORS.textPrimary,
-  },
-  lambGuide: {
-    marginBottom: 16,
   },
   label: {
     fontWeight: '600',
