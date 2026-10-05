@@ -102,7 +102,7 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 - Use sentence case and plain words. Buttons say exactly what happens ("Check in," "Save changes").
 
 ## Screens
-1. **Sign in:** email magic link (simplest for testing). Add Google and Apple sign-in later, in Phase 3.
+1. **Sign in:** a single "Continue with Google" button (Supabase Google OAuth). Add Apple sign-in later, in Phase 3.
 2. **My groups:** a list of my groups, plus "Create group" (name, book, start date, weekly target) and "Join group" (6-character invite code).
 3. **Today (per group):** today's chapter in KJV, readable and scrollable. At the bottom:
    - Pick a kind (Reflection / Revelation / Action), write at least 10 characters, then "Check in."
@@ -163,7 +163,7 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 ## Phases
 
 ### Phase 1 — Web MVP (goal: my friends can use it)
-- Expo project setup, Supabase connection, email sign-in.
+- Expo project setup, Supabase connection, Google sign-in.
 - Create/join group, Today screen with KJV and a required reflection to check in, and the group feed.
 - A simple garden with each person's tree stage and the lamb.
 - Deploy to Vercel, with instructions for "Add to Home Screen" on iPhone and Android.
@@ -174,7 +174,7 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 ### Phase 3 — Real phone app
 - EAS Build, TestFlight (iOS) and Play internal testing (Android).
 - Push notifications (a daily reading reminder at a time the user picks, plus friend nudges).
-- Google and Apple sign-in, and a privacy policy page (Singapore PDPA).
+- Apple sign-in, and a privacy policy page (Singapore PDPA).
 - Home-screen widget later.
 
 ### Later ideas (don't build yet)

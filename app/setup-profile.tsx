@@ -5,11 +5,22 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AVATAR_COLORS } from '../components/pixel/palette';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
+import { useAuth } from '../lib/auth-context';
 import { getErrorMessage } from '../lib/error-message';
 import { createMyProfile } from '../lib/profile';
 
+// Google puts the account's name in user_metadata as full_name (and name, on
+// some flows) — prefill with whichever is there so people don't have to
+// retype what Google already told us. They can still change it below.
+function suggestedName(session: ReturnType<typeof useAuth>['session']): string {
+  const metadata = session?.user.user_metadata as Record<string, unknown> | undefined;
+  const fullName = metadata?.full_name ?? metadata?.name;
+  return typeof fullName === 'string' ? fullName : '';
+}
+
 export default function SetupProfileScreen() {
-  const [displayName, setDisplayName] = useState('');
+  const { session } = useAuth();
+  const [displayName, setDisplayName] = useState(() => suggestedName(session));
   const [avatarColor, setAvatarColor] = useState<string>(AVATAR_COLORS[0]);
   const [saving, setSaving] = useState(false);
 

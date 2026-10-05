@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Lamb } from '../components/pixel/Lamb';
 import { Tree } from '../components/pixel/Tree';
@@ -22,9 +22,7 @@ function Cloud({ top, left, right, scale = 1 }: { top: number; left?: number; ri
 
 export default function SignInScreen() {
   const { session, loading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
 
   if (loading) {
     return (
@@ -38,22 +36,23 @@ export default function SignInScreen() {
     return <Redirect href="/today" />;
   }
 
-  async function handleSendLink() {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) return;
-
-    setSending(true);
+  async function handleGoogleSignIn() {
+    setSigningIn(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email: trimmedEmail });
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/today` : undefined;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
       if (error) {
         showAlert('Something went wrong', error.message);
-        return;
+        setSigningIn(false);
       }
-      setSent(true);
+      // On success the browser navigates away to Google, so there's nothing
+      // more to do here — we come back through the redirect above.
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
-    } finally {
-      setSending(false);
+      setSigningIn(false);
     }
   }
 
@@ -75,35 +74,14 @@ export default function SignInScreen() {
 
       <View style={styles.grass}>
         <View style={styles.card}>
-          {sent ? (
-            <>
-              <Text style={styles.cardLabel}>✓ Link sent gently</Text>
-              <Text style={styles.note}>We sent a sign-in link to {email}. Open it on this device to continue.</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.cardLabel}>Email address</Text>
-              <View style={styles.inputRow}>
-                <Text style={styles.inputGlyph}>@</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor={COLORS.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
-              <Pressable style={styles.button} onPress={handleSendLink} disabled={sending}>
-                <Text style={styles.buttonText}>{sending ? 'Sending…' : 'Send me a sign-in link'}</Text>
-              </Pressable>
-              <Text style={styles.note}>
-                No password to remember. We&apos;ll send a one-time link to your inbox.
-              </Text>
-            </>
-          )}
+          <Text style={styles.cardLabel}>Welcome</Text>
+          <Pressable style={styles.button} onPress={handleGoogleSignIn} disabled={signingIn}>
+            <View style={styles.googleBadge}>
+              <Text style={styles.googleBadgeText}>G</Text>
+            </View>
+            <Text style={styles.buttonText}>{signingIn ? 'Opening Google…' : 'Continue with Google'}</Text>
+          </Pressable>
+          <Text style={styles.note}>No password to remember. We&apos;ll use your Google account to sign you in.</Text>
         </View>
       </View>
     </View>
@@ -214,36 +192,33 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 8,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 48,
-    paddingHorizontal: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    backgroundColor: COLORS.white,
-  },
-  inputGlyph: {
-    fontFamily: FONTS.heading,
-    color: COLORS.textPrimary,
-  },
-  input: {
-    flex: 1,
-    fontFamily: FONTS.serif,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-  },
   button: {
     ...buttonBase,
-    backgroundColor: COLORS.sage,
+    backgroundColor: COLORS.white,
     paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     marginTop: 16,
   },
   buttonText: {
     fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  googleBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBadgeText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
     color: COLORS.textPrimary,
   },
   note: {
