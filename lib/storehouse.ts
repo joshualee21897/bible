@@ -19,20 +19,36 @@ async function requireUserId(): Promise<string> {
 export async function getStorehouseSummary(groupId: string): Promise<StorehouseSummary> {
   const { data, error } = await supabase
     .from('storehouse_deposits')
-    .select('amount, created_at, profiles(display_name)')
+    .select('amount, user_id, created_at')
     .eq('group_id', groupId)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  const rows = (data ?? []) as unknown as { amount: number; profiles: { display_name: string } | null }[];
+  const rows = data ?? [];
 
   const total = rows.reduce((sum, row) => sum + row.amount, 0);
   const progress = getLevelForTotal(total);
 
+  // storehouse_deposits.user_id and profiles.id both reference auth.users,
+  // but Supabase's API can't infer that as a joinable relationship — so the
+  // names are looked up separately and matched up here instead.
+  const userIds = [...new Set(rows.map((row) => row.user_id))];
+  const namesById = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profileRows, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', userIds);
+    if (profilesError) throw profilesError;
+    for (const row of profileRows ?? []) {
+      namesById.set(row.id, row.display_name);
+    }
+  }
+
   const seen = new Set<string>();
   const givers: string[] = [];
   for (const row of rows) {
-    const name = row.profiles?.display_name;
+    const name = namesById.get(row.user_id);
     if (name && !seen.has(name)) {
       seen.add(name);
       givers.push(name);
