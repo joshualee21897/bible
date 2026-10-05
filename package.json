@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/geist-pixel": "^0.4.0",
     "@expo-google-fonts/literata": "^0.4.3",
-    "@expo-google-fonts/pixelify-sans": "^0.4.2",
     "@expo/metro-runtime": "^57.0.16",
     "@supabase/supabase-js": "^2.117.2",
     "expo": "~57.0.26",

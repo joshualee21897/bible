@@ -1,9 +1,4 @@
-import {
-  PixelifySans_400Regular,
-  PixelifySans_500Medium,
-  PixelifySans_600SemiBold,
-  PixelifySans_700Bold,
-} from '@expo-google-fonts/pixelify-sans';
+import { GeistPixel_400Regular } from '@expo-google-fonts/geist-pixel';
 import {
   Literata_400Regular,
   Literata_400Regular_Italic,
@@ -21,10 +16,7 @@ import { LambGuideProvider } from '../components/guide/guide-context';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    PixelifySans_400Regular,
-    PixelifySans_500Medium,
-    PixelifySans_600SemiBold,
-    PixelifySans_700Bold,
+    GeistPixel_400Regular,
     Literata_400Regular,
     Literata_500Medium,
     Literata_600SemiBold,
