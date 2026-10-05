@@ -35,11 +35,10 @@ import { getLambMood } from '../../../lib/lamb-mood';
 import { getTreeStage, getTreeStageLabel, isTreeResting } from '../../../lib/tree';
 import { getWeeklyGoalSummary, type WeeklyGoalSummary } from '../../../lib/weekly-goal';
 
-const PIXEL_SIZE = 6;
-const PER_SLOT_WIDTH = 190;
-const GRASS_HEIGHT = 130;
-const GROUND_BAND_HEIGHT = 56;
-const LABEL_AREA_HEIGHT = 44;
+const PIXEL_SIZE = 3;
+const COLUMNS = 3;
+const SKY_HEIGHT = 70;
+const GROUND_BAND_HEIGHT = 32;
 
 type SheetKind = 'balance' | 'invite' | 'week' | null;
 
@@ -58,7 +57,11 @@ export default function GroupGardenScreen() {
   const [openSheet, setOpenSheet] = useState<SheetKind>(null);
 
   const sceneHeight = Math.round(windowHeight * 0.75);
-  const groundGrid = useMemo(() => buildFlatGround(240), []);
+  const sceneWidth = windowWidth - 32;
+  const groundGrid = useMemo(
+    () => buildFlatGround(Math.round(sceneWidth / (GROUND_BAND_HEIGHT / 14))),
+    [sceneWidth]
+  );
 
   const load = useCallback(async () => {
     if (!group) return;
@@ -159,16 +162,6 @@ export default function GroupGardenScreen() {
     ...ownedItemKeys.map((itemKey): Slot => ({ kind: 'item', itemKey })),
   ];
 
-  const sceneContentWidth = Math.max(windowWidth - 32, slots.length * PER_SLOT_WIDTH);
-  const groundTop = sceneHeight - GRASS_HEIGHT;
-  const standBottom = sceneHeight - groundTop - LABEL_AREA_HEIGHT;
-
-  function slotLeft(index: number): number {
-    if (slots.length <= 1) return sceneContentWidth / 2;
-    const usableWidth = sceneContentWidth - PER_SLOT_WIDTH;
-    return PER_SLOT_WIDTH / 2 + (usableWidth * index) / Math.max(1, slots.length - 1);
-  }
-
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -202,29 +195,27 @@ export default function GroupGardenScreen() {
       />
 
       <View style={[styles.scene, { height: sceneHeight }]}>
-        <View style={[styles.sky, { top: 0, height: groundTop }]} />
-        <View style={[styles.groundFill, { top: groundTop, height: sceneHeight - groundTop }]} />
-        <View style={[styles.groundBand, { top: groundTop, width: sceneContentWidth }]}>
-          <PixelGrid grid={groundGrid} pixelSize={GROUND_BAND_HEIGHT / 14} />
-        </View>
-
-        <ScrollView
-          horizontal
-          style={styles.sceneScroll}
-          showsHorizontalScrollIndicator={slots.length > 3}
-          contentContainerStyle={{ width: sceneContentWidth, height: sceneHeight }}
-        >
-          <View style={{ width: sceneContentWidth, height: sceneHeight }}>
-            {slots.map((slot, index) => {
-              const left = slotLeft(index);
+        <View style={[styles.sky, { height: SKY_HEIGHT }]} />
+        <View style={styles.grassArea}>
+          <View style={{ width: sceneWidth }}>
+            <PixelGrid grid={groundGrid} pixelSize={GROUND_BAND_HEIGHT / 14} />
+          </View>
+          <ScrollView
+            style={styles.gridScroll}
+            showsVerticalScrollIndicator={slots.length > COLUMNS}
+            contentContainerStyle={styles.grid}
+          >
+            {slots.map((slot) => {
               if (slot.kind === 'member') {
                 const stage = getTreeStage(slot.member.checkin_count);
                 const resting = isTreeResting(slot.member.last_checkin_at, slot.member.checkin_count);
                 return (
-                  <View key={slot.member.user_id} style={[styles.standWrap, { left: left - 64, bottom: standBottom }]}>
+                  <View key={slot.member.user_id} style={styles.gridCell}>
                     <Tree stage={stage} resting={resting} pixelSize={PIXEL_SIZE} showGround={false} />
                     <View style={styles.labelPill}>
-                      <Text style={styles.labelName}>{slot.member.display_name}</Text>
+                      <Text style={styles.labelName} numberOfLines={1}>
+                        {slot.member.display_name}
+                      </Text>
                       <Text style={styles.labelStage}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
                     </View>
                   </View>
@@ -232,7 +223,7 @@ export default function GroupGardenScreen() {
               }
               if (slot.kind === 'lamb') {
                 return (
-                  <View key="lamb" style={[styles.standWrap, { left: left - 48, bottom: standBottom }]}>
+                  <View key="lamb" style={styles.gridCell}>
                     <Lamb mood={lambMood} pixelSize={PIXEL_SIZE} />
                     <View style={styles.labelPill}>
                       <Text style={styles.labelStage}>
@@ -245,18 +236,20 @@ export default function GroupGardenScreen() {
                 );
               }
               return (
-                <View key={slot.itemKey} style={[styles.standWrap, { left: left - 48, bottom: standBottom }]}>
+                <View key={slot.itemKey} style={styles.gridCell}>
                   <GardenItemSprite itemKey={slot.itemKey} pixelSize={PIXEL_SIZE} />
                   <View style={styles.labelPill}>
-                    <Text style={styles.labelStage}>{getGardenItem(slot.itemKey)?.name ?? slot.itemKey}</Text>
+                    <Text style={styles.labelStage} numberOfLines={1}>
+                      {getGardenItem(slot.itemKey)?.name ?? slot.itemKey}
+                    </Text>
                   </View>
                 </View>
               );
             })}
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
 
-        {slots.length > 3 && <Text style={styles.swipeHint}>Swipe to see everyone →</Text>}
+        {slots.length > COLUMNS && <Text style={styles.scrollHint}>Scroll for more ↓</Text>}
       </View>
 
       <View style={styles.iconRow}>
@@ -383,29 +376,29 @@ const styles = StyleSheet.create({
     ...HARD_SHADOW,
   },
   sky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    width: '100%',
     backgroundColor: COLORS.sky,
   },
-  groundFill: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+  grassArea: {
+    flex: 1,
     backgroundColor: PALETTE.grassDark,
   },
-  groundBand: {
-    position: 'absolute',
-    left: 0,
+  gridScroll: {
+    flex: 1,
   },
-  sceneScroll: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: 10,
+    paddingBottom: 16,
   },
-  swipeHint: {
+  gridCell: {
+    width: `${100 / COLUMNS}%`,
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingHorizontal: 4,
+  },
+  scrollHint: {
     position: 'absolute',
     top: 8,
     alignSelf: 'center',
@@ -417,10 +410,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
   },
-  standWrap: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
   labelPill: {
     marginTop: 4,
     alignItems: 'center',
@@ -429,7 +418,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     paddingVertical: 3,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
+    maxWidth: '100%',
   },
   labelName: {
     fontFamily: FONTS.headingSemiBold,
