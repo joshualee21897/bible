@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookPickerSheet } from '../components/read/BookPickerSheet';
@@ -21,8 +21,13 @@ export default function CreateGroupScreen() {
   const [weeklyTarget, setWeeklyTarget] = useState('5');
   const [saving, setSaving] = useState(false);
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
+  const submittingRef = useRef(false);
 
   async function handleCreate() {
+    // A plain ref check, not just the `saving` state — a fast double-tap can
+    // fire this twice before React re-renders the disabled button.
+    if (submittingRef.current) return;
+
     const trimmedName = name.trim();
     if (!trimmedName) {
       showAlert('Add a group name', 'Give your group a name your friends will recognize.');
@@ -38,6 +43,7 @@ export default function CreateGroupScreen() {
       return;
     }
 
+    submittingRef.current = true;
     setSaving(true);
     try {
       const group = await createGroup({
@@ -50,6 +56,7 @@ export default function CreateGroupScreen() {
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   }

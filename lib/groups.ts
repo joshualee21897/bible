@@ -72,7 +72,11 @@ export async function createGroup(input: {
     const { error: memberError } = await supabase
       .from('group_members')
       .insert({ group_id: data.id, user_id: userId, role: 'owner' });
-    if (memberError) throw memberError;
+    // A duplicate here means this exact group already has us as a member —
+    // most likely a double-tap on "Create group" re-running this whole
+    // function for a group that was already finished setting up. Since the
+    // group we just created (or re-fetched) is already usable, that's fine.
+    if (memberError && memberError.code !== '23505') throw memberError;
 
     return data;
   }
