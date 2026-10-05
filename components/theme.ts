@@ -33,11 +33,13 @@ export const COLORS = {
   success: '#5FA06B',
 } as const;
 
+// Geist Pixel ships only one weight (Regular) — all four heading tokens
+// point to it, so screens using any of them stay visually consistent.
 export const FONTS = {
-  heading: 'PixelifySans_700Bold',
-  headingSemiBold: 'PixelifySans_600SemiBold',
-  headingMedium: 'PixelifySans_500Medium',
-  headingRegular: 'PixelifySans_400Regular',
+  heading: 'GeistPixel_400Regular',
+  headingSemiBold: 'GeistPixel_400Regular',
+  headingMedium: 'GeistPixel_400Regular',
+  headingRegular: 'GeistPixel_400Regular',
   serif: 'Literata_400Regular',
   serifMedium: 'Literata_500Medium',
   serifSemiBold: 'Literata_600SemiBold',
