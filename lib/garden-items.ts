@@ -1,4 +1,4 @@
-export type GardenItemKind = 'animal' | 'decoration';
+export type GardenItemKind = 'animal' | 'plant' | 'decoration';
 
 export type GardenItem = {
   key: string;
@@ -6,6 +6,10 @@ export type GardenItem = {
   verse: string | null;
   price: number;
   kind: GardenItemKind;
+  // 1-12 (January-December). Omitted means available all year. Used for
+  // items like the Christmas star that should only show in the shop during
+  // their season — an already-bought one still stays in the garden either way.
+  availableMonths?: number[];
 };
 
 // One place to tweak names, verses, and prices.
@@ -19,9 +23,14 @@ export const GARDEN_ITEMS: GardenItem[] = [
   { key: 'lion', name: 'Lion', verse: 'Revelation 5:5', price: 250, kind: 'animal' },
   { key: 'well', name: 'Well', verse: null, price: 60, kind: 'decoration' },
   { key: 'bench', name: 'Bench', verse: null, price: 40, kind: 'decoration' },
-  { key: 'lanterns', name: 'Lanterns', verse: null, price: 70, kind: 'decoration' },
+  { key: 'lanterns', name: 'Lamp unto my feet', verse: 'Psalm 119:105', price: 70, kind: 'decoration' },
 ];
 
 export function getGardenItem(key: string): GardenItem | undefined {
   return GARDEN_ITEMS.find((item) => item.key === key);
+}
+
+export function isItemAvailableThisMonth(item: GardenItem, date: Date = new Date()): boolean {
+  if (!item.availableMonths || item.availableMonths.length === 0) return true;
+  return item.availableMonths.includes(date.getMonth() + 1);
 }

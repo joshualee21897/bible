@@ -44,6 +44,13 @@ export const PALETTE = {
   leavesRestingLight: '#D6EAD8',
   leavesRestingDark: '#BFDDC3',
   barkResting: '#E5CFC0',
+
+  // Redrawn animal sprites (fish, raven, lion).
+  fishOrange: '#F2A268',
+  fishOrangeDark: '#D98A4E',
+  ravenBlack: '#3F3A3E',
+  ravenHighlight: '#8B7FC7',
+  maneBrown: '#C98A4A',
 } as const;
 
 export const AVATAR_COLORS = [
