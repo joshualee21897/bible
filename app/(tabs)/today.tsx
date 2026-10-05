@@ -18,7 +18,14 @@ import { getGroupPulses, type GroupPulse } from '../../lib/group-pulse';
 import { getMyProfile, type Profile } from '../../lib/profile';
 import { getReactionsFor } from '../../lib/reactions';
 import { buildLambGuide, greeting, groupPulseText, pluralize } from '../../lib/today-helpers';
-import { getNextStage, getStageProgressPercent, getTreeStage, getTreeStageLabel, type TreeStage } from '../../lib/tree';
+import {
+  getNextStage,
+  getStageProgressPercent,
+  getStageSegments,
+  getTreeStage,
+  getTreeStageLabel,
+  type TreeStage,
+} from '../../lib/tree';
 
 const WEEKLY_PERSONAL_GOAL = 5;
 const STAGE_ORDER: TreeStage[] = ['seed', 'sprout', 'sapling', 'tree', 'fruiting'];
@@ -98,6 +105,7 @@ export default function TodayDashboard() {
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
   const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
+  const stageSegments = getStageSegments(dashboard.totalCheckins);
   const lambGuide = buildLambGuide(dashboard, stage, grewStage);
 
   if (artStyle === 'crayon') {
@@ -197,7 +205,11 @@ export default function TodayDashboard() {
             <Text style={styles.myTreeCount}>{pluralize(dashboard.totalCheckins, 'chapter')} read</Text>
             {nextStage ? (
               <>
-                <ProgressBar percent={stageProgressPercent} segments={8} />
+                <ProgressBar
+                  percent={stageProgressPercent}
+                  segments={stageSegments?.segments ?? 8}
+                  filled={stageSegments?.filled}
+                />
                 <Text style={styles.myTreeNext}>
                   {pluralize(nextStage.remaining, 'more')} to grow into a {nextStage.label.toLowerCase()}
                 </Text>

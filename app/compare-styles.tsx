@@ -13,7 +13,7 @@ import { CRAYON_COLORS, CRAYON_FONTS } from '../lib/theme-crayon';
 import { getMyDashboard, type MyDashboard } from '../lib/dashboard';
 import { getErrorMessage } from '../lib/error-message';
 import { buildLambGuide, pluralize } from '../lib/today-helpers';
-import { getNextStage, getStageProgressPercent, getTreeStage, getTreeStageLabel } from '../lib/tree';
+import { getNextStage, getStageProgressPercent, getStageSegments, getTreeStage, getTreeStageLabel } from '../lib/tree';
 
 export default function CompareStylesScreen() {
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
@@ -44,6 +44,7 @@ export default function CompareStylesScreen() {
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
   const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
+  const stageSegments = getStageSegments(dashboard.totalCheckins);
   const lambGuide = buildLambGuide(dashboard, stage, false);
 
   return (
@@ -70,7 +71,11 @@ export default function CompareStylesScreen() {
             <Text style={styles.pixelTreeCount}>{pluralize(dashboard.totalCheckins, 'chapter')} read</Text>
             {nextStage ? (
               <>
-                <ProgressBar percent={stageProgressPercent} segments={8} />
+                <ProgressBar
+                  percent={stageProgressPercent}
+                  segments={stageSegments?.segments ?? 8}
+                  filled={stageSegments?.filled}
+                />
                 <Text style={styles.pixelTreeNext}>
                   {pluralize(nextStage.remaining, 'more')} to grow into a {nextStage.label.toLowerCase()}
                 </Text>
