@@ -259,3 +259,13 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 - We both see the same chapter, can check in, and can see each other's check-ins and reflections in the feed.
 - Trees show the right stage, and the lamb appears in the garden.
 - Someone who isn't in the group cannot see its content.
+
+## Experimental: crayon art-style test (branch `crayon-test` only)
+A test of a hand-drawn crayon look as an alternative to the pixel art, kept entirely on its own branch — not merged into the main app unless explicitly decided.
+
+- `lib/theme-crayon.ts` holds the crayon color/font/shadow tokens, same shape as `components/theme.ts`, so a component can pick either theme.
+- `lib/art-style-context.tsx`'s `ArtStyleProvider` holds the current choice (`'pixel' | 'crayon'`), defaulting to pixel, saved to the device (not synced across devices or accounts).
+- The toggle lives on the Profile screen ("Art style: Pixel / Crayon (beta)"), with a "Compare styles" link to `/compare-styles` showing the Today hero card and tree card in both styles side by side.
+- Only the Today tab is restyled (`components/crayon/CrayonTodayView.tsx`), plus the Daily drops card (`components/crayon/CrayonDailyDrops.tsx`) wherever it's shown — everything else keeps the pixel look regardless of the toggle.
+- The hand-drawn wobble and grain look comes from `react-native-svg` (`feTurbulence` + `feDisplacementMap` filters), not from any new image assets. Placeholder illustrations (`components/crayon/Lamb.tsx`, `Tree.tsx`, `WaterDrop.tsx`, `Sprout.tsx`, `Gear.tsx`) are simple SVG shapes, each its own file so they're easy to swap for real illustrated art later.
+- Two dependencies added for this test only: `react-native-svg` and `@expo-google-fonts/patrick-hand`.
