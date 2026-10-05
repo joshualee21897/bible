@@ -69,8 +69,10 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - Everything is computed live from check-ins, reflections, prayers, and reactions — no separate mission-progress table, same as the drops balance.
 - Reaching a mission's target doesn't auto-credit the drops — it shows a **Collect** button, same idea as Daily drops. Tapping it adds the reward to the balance and the mission then disappears from the list. A `mission_claims` table (user_id, mission_key, period_key) remembers what's been collected: `period_key` is empty for one-time missions (so collecting hides them for good), a period identifier like `week:2026-10-05` for the weekly/monthly missions (so they reappear once a new period also hits the target), and an occurrence number for the repeatable "Prodigal Returns" mission (so each comeback can be collected once, then the next one shows up next time).
 
-### Garden animals and items (bought with drops; show the verse when unlocked)
-| Item | Verse | Price |
+### Garden animals, plants, and items (bought with drops; show the verse when unlocked)
+Three categories — Animals, Plants, Decor — plus a few seasonal decor items only offered in their own months. All of it lives in `lib/garden-items.ts`, the source of truth, not this table.
+
+| Animals | Verse | Price |
 |---|---|---|
 | Dove | Genesis 8:11 | 50 |
 | Sparrow | Matthew 10:29–31 | 50 |
@@ -79,12 +81,52 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 | Donkey | Zechariah 9:9 | 120 |
 | Eagle | Isaiah 40:31 | 150 |
 | Lion | Revelation 5:5 | 250 |
-| Well, bench, lanterns | none | 40–100 |
+| Deer | Psalm 42:1 | 100 |
+| Ram | Genesis 22:13 | 90 |
+| Hen and chicks | Matthew 23:37 | 70 |
+| Camel | Genesis 24:10 | 150 |
+| Ox | Isaiah 1:3 | 120 |
+| Ant hill | Proverbs 6:6 | 20 |
+| Beehive | Exodus 3:8 | 60 |
+
+| Plants | Verse | Price |
+|---|---|---|
+| Lilies of the field | Matthew 6:28 | 30 |
+| Fig tree | Micah 4:4 | 80 |
+| Palm tree | Psalm 92:12 | 90 |
+| Cedar of Lebanon | Psalm 92:12 | 150 |
+| Pomegranate tree | Exodus 28:33 | 100 |
+| Budding almond branch | Numbers 17:8 | 60 |
+
+| Decor | Verse | Price |
+|---|---|---|
+| Well, bench | none | 40–60 |
+| Lamp unto my feet | Psalm 119:105 | 70 |
+| Ebenezer stone | 1 Samuel 7:12 | 80 |
+| Harvest table | Psalm 23:5 | 120 |
+| Shepherd's staff | Psalm 23:4 | 40 |
+| Basket of loaves and fish | John 6:9 | 50 |
+| Fishing boat with net | Luke 5:6 | 150 |
+| Watchtower | Isaiah 5:2 | 200 |
+| Harp | Psalm 33:2 | 90 |
+| Jars of clay | 2 Corinthians 4:7 | 30 |
+
+| Seasonal decor (only shown in the shop during these months) | Verse | Price | Months |
+|---|---|---|---|
+| Rainbow | Genesis 9:13 | 100 | all year (no month given) |
+| Christmas star and manger | Luke 2:7 | 120 | December |
+| Easter lilies | none | 60 | March–April |
 
 Treat the prices as a starting point. Keep them in one config file so I can tweak them.
 
-- The same animal or item can be bought more than once per garden — two different people (or the same person twice) can each add their own lion, for instance. Bought items don't show a name label in the garden scene (trees still do, since those are tied to a person).
+- The same animal, plant, or item can be bought more than once per garden — two different people (or the same person twice) can each add their own lion, for instance. Bought items don't show a name label in the garden scene (trees still do, since those are tied to a person) — except the Ebenezer stone, which shows the group's own name on it.
+- A seasonal item still stays in a garden it was already bought into, even outside its months — only the shop listing hides it.
 - The fence that divides the bought items from everyone's trees is a permanent, always-on part of the garden layout — it's not something anyone buys from the shop.
+
+### Shop screen layout
+- One row of filters: a segmented All / Animals / Plants / Decor control, plus a "Hide owned" switch on the same row. Owned items get an "In our garden" badge and sort to the end of the list.
+- Content is capped at 600px wide and centered, 2 columns on phones and 3 on wider screens. Each card shows the sprite, name, verse reference, price, and one of: **Buy**, **Need X more 💧** (disabled), or **In our garden** (once owned).
+- Tapping a card opens a detail sheet with a bigger sprite, the full KJV verse text (looked up live from the bundled Bible text, not just shown as a reference), the price, and a Buy button — buying another copy still works from here even once owned, since duplicates are allowed.
 
 ### The Storehouse and garden levels
 - Each group has a shared **Storehouse** (Genesis 41:56) — a pool of drops the group fills together, separate from the shop. Anyone can give ("deposit") drops from their own personal balance into their group's Storehouse; once given, it can't be taken back.
@@ -132,7 +174,7 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
 4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
 5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, plus a level header (current level + verse, tap for the Levels sheet) and the group's Storehouse card. The viewer's own drop balance and the invite code sit at the top; Shop, Upgrade, Deposit, and Leave sit at the bottom. Leaving a group requires typing the group's name to confirm, so it can't happen by accident.
-6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
+6. **Shop:** buy animals, plants, and decor with your personal drops, for this group's garden — see "Shop screen layout" above for the filters, cards, and detail sheet.
 7. **Missions:** a global tab (not per group) with bonus ways to earn drops — Daily drops at the top, then this week/month goals and lifetime milestone badges, counted across all your groups. Finished missions show a Collect button rather than crediting automatically.
 8. **Read:** a global tab for browsing any book/chapter in KJV outside of a group's "Today" chapter. Tap a verse's text (not just its number) to highlight it, with a choice of a few pastel highlighter colors; tap ✎ to add a personal note. Reopening the tab (or refreshing the page) picks up at the last book/chapter read, instead of resetting to Genesis 1. A "My highlights" screen lists every highlighted/noted verse across all books.
 9. **Profile:** name and avatar color. Sign out.

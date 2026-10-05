@@ -240,6 +240,13 @@ export default function GroupGardenScreen() {
     return (
       <View key={slot.instanceKey} style={styles.gridCell}>
         <GardenItemSprite itemKey={slot.itemKey} pixelSize={PIXEL_SIZE} />
+        {slot.itemKey === 'ebenezer_stone' && group && (
+          <View style={styles.labelPill}>
+            <Text style={styles.labelName} numberOfLines={1}>
+              {group.name}
+            </Text>
+          </View>
+        )}
       </View>
     );
   }

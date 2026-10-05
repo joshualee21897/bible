@@ -1,7 +1,21 @@
 import { createFlatGrid, finalizeFlatGrid, stampEllipse, stampRect } from './flat-shapes';
 import type { PaletteKey, PixelGridData } from './types';
 
-export type AnimalKey = 'dove' | 'sparrow' | 'fish' | 'raven' | 'donkey' | 'eagle' | 'lion';
+export type AnimalKey =
+  | 'dove'
+  | 'sparrow'
+  | 'fish'
+  | 'raven'
+  | 'donkey'
+  | 'eagle'
+  | 'lion'
+  | 'deer'
+  | 'ram'
+  | 'hen_and_chicks'
+  | 'camel'
+  | 'ox'
+  | 'ant_hill'
+  | 'beehive';
 
 function buildBird(bodyColor: PaletteKey, bellyColor: PaletteKey, beakColor: PaletteKey): PixelGridData {
   const g = createFlatGrid(24, 24);
@@ -126,6 +140,122 @@ function buildLion(): PixelGridData {
   return grid;
 }
 
+// Brown body with small antlers, panting after water brooks (Psalm 42:1).
+function buildDeer(): PixelGridData {
+  const g = createFlatGrid(24, 22);
+  stampEllipse(g, 14, 12, 6, 4, 'bark');
+  stampEllipse(g, 16, 14.5, 3, 2, 'barkShade');
+  stampEllipse(g, 6, 8, 3, 3, 'bark');
+  stampRect(g, 4, 2, 1, 4, 'barkShade');
+  stampRect(g, 7, 2, 1, 4, 'barkShade');
+  stampRect(g, 8, 15, 1, 5, 'barkShade');
+  stampRect(g, 12, 15, 1, 5, 'barkShade');
+  stampRect(g, 17, 15, 1, 5, 'barkShade');
+  stampRect(g, 20, 15, 1, 5, 'barkShade');
+  const grid = finalizeFlatGrid(g);
+  grid[8][5] = 'outline';
+  return grid;
+}
+
+// Cream-white with curled horns, caught in the thicket (Genesis 22:13).
+function buildRam(): PixelGridData {
+  const g = createFlatGrid(24, 20);
+  stampEllipse(g, 14, 11, 6.5, 5, 'woolLight');
+  stampEllipse(g, 16, 14, 3, 2, 'woolShade');
+  stampEllipse(g, 6, 8, 3.2, 3, 'faceCream');
+  stampEllipse(g, 4, 6, 1.8, 1.8, 'bark');
+  stampEllipse(g, 3, 9, 1.4, 1.4, 'barkShade');
+  stampRect(g, 8, 14, 1, 5, 'legTan');
+  stampRect(g, 12, 14, 1, 5, 'legTan');
+  stampRect(g, 17, 14, 1, 5, 'legTan');
+  stampRect(g, 20, 14, 1, 5, 'legTan');
+  const grid = finalizeFlatGrid(g);
+  grid[7][5] = 'outline';
+  return grid;
+}
+
+// A hen gathering her chicks under her wing (Matthew 23:37).
+function buildHenAndChicks(): PixelGridData {
+  const g = createFlatGrid(24, 20);
+  stampEllipse(g, 13, 12, 6, 4.5, 'birdDark');
+  stampEllipse(g, 15, 14, 3, 2, 'birdLight');
+  stampEllipse(g, 7, 8, 3, 2.8, 'birdDark');
+  stampRect(g, 3, 8, 2, 1.5, 'goldDark');
+  const grid = finalizeFlatGrid(g);
+  grid[7][6] = 'outline';
+
+  const chicksShape = createFlatGrid(24, 20);
+  stampEllipse(chicksShape, 4, 18, 1.8, 1.6, 'goldLight');
+  stampEllipse(chicksShape, 8.5, 18.5, 1.8, 1.6, 'goldLight');
+  stampEllipse(chicksShape, 13, 18, 1.8, 1.6, 'goldLight');
+  const chicksGrid = finalizeFlatGrid(chicksShape);
+  for (let y = 0; y < chicksGrid.length; y++) {
+    for (let x = 0; x < chicksGrid[0].length; x++) {
+      if (chicksGrid[y][x]) grid[y][x] = chicksGrid[y][x];
+    }
+  }
+  return grid;
+}
+
+// Tan with a hump, ready for the journey (Genesis 24:10).
+function buildCamel(): PixelGridData {
+  const g = createFlatGrid(24, 22);
+  stampEllipse(g, 13, 13, 6, 4, 'dirtLight');
+  stampEllipse(g, 11, 8, 3.2, 3.4, 'dirtLight');
+  stampRect(g, 4, 6, 2, 8, 'dirtLight');
+  stampEllipse(g, 4, 5, 2.4, 2.2, 'dirtLight');
+  stampRect(g, 8, 17, 1, 4, 'dirtDark');
+  stampRect(g, 12, 17, 1, 4, 'dirtDark');
+  stampRect(g, 17, 17, 1, 4, 'dirtDark');
+  stampRect(g, 20, 17, 1, 4, 'dirtDark');
+  const grid = finalizeFlatGrid(g);
+  grid[4][3] = 'outline';
+  return grid;
+}
+
+// Sturdy and dark, the ox who knows its owner (Isaiah 1:3).
+function buildOx(): PixelGridData {
+  const g = createFlatGrid(24, 20);
+  stampEllipse(g, 14, 11, 7, 4.5, 'barkShade');
+  stampEllipse(g, 6, 8, 3.4, 3, 'barkShade');
+  stampRect(g, 3, 6, 1, 1.5, 'woolLight');
+  stampRect(g, 8, 6, 1, 1.5, 'woolLight');
+  stampRect(g, 8, 14, 1, 5, 'outline');
+  stampRect(g, 12, 14, 1, 5, 'outline');
+  stampRect(g, 17, 14, 1, 5, 'outline');
+  stampRect(g, 20, 14, 1, 5, 'outline');
+  const grid = finalizeFlatGrid(g);
+  grid[7][5] = 'woolLight';
+  return grid;
+}
+
+// A small mound with a trail of tiny ants, considered wise (Proverbs 6:6).
+function buildAntHill(): PixelGridData {
+  const g = createFlatGrid(24, 24);
+  stampEllipse(g, 12, 18, 9, 5, 'dirtLight');
+  stampEllipse(g, 12, 16, 6, 3, 'dirtDark');
+  const grid = finalizeFlatGrid(g);
+  grid[12][6] = 'outline';
+  grid[13][9] = 'outline';
+  grid[11][16] = 'outline';
+  grid[14][19] = 'outline';
+  return grid;
+}
+
+// A stack of golden hive domes, land flowing with honey (Exodus 3:8).
+// Each tier alternates shade so the stack reads as rings, not one blob.
+function buildBeehive(): PixelGridData {
+  const g = createFlatGrid(24, 24);
+  stampEllipse(g, 12, 20, 7, 3.5, 'goldDark');
+  stampEllipse(g, 12, 15.5, 5.6, 3, 'goldLight');
+  stampEllipse(g, 12, 11.5, 4.2, 2.6, 'goldDark');
+  stampEllipse(g, 12, 8, 2.8, 2.4, 'goldLight');
+  const grid = finalizeFlatGrid(g);
+  grid[13][6] = 'outline';
+  grid[9][18] = 'outline';
+  return grid;
+}
+
 export function buildAnimalGrid(key: AnimalKey): PixelGridData {
   switch (key) {
     case 'dove':
@@ -142,5 +272,19 @@ export function buildAnimalGrid(key: AnimalKey): PixelGridData {
       return buildEagle();
     case 'lion':
       return buildLion();
+    case 'deer':
+      return buildDeer();
+    case 'ram':
+      return buildRam();
+    case 'hen_and_chicks':
+      return buildHenAndChicks();
+    case 'camel':
+      return buildCamel();
+    case 'ox':
+      return buildOx();
+    case 'ant_hill':
+      return buildAntHill();
+    case 'beehive':
+      return buildBeehive();
   }
 }
