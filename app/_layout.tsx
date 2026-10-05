@@ -10,6 +10,7 @@ import {
   Literata_500Medium,
   Literata_600SemiBold,
 } from '@expo-google-fonts/literata';
+import { PatrickHand_400Regular } from '@expo-google-fonts/patrick-hand';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -18,6 +19,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider } from '../lib/auth-context';
 import { COLORS } from '../components/theme';
 import { LambGuideProvider } from '../components/guide/guide-context';
+import { ArtStyleProvider } from '../lib/art-style-context';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -29,6 +31,7 @@ export default function RootLayout() {
     Literata_500Medium,
     Literata_600SemiBold,
     Literata_400Regular_Italic,
+    PatrickHand_400Regular,
   });
 
   if (!fontsLoaded) {
@@ -40,16 +43,19 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <LambGuideProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
-          <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
-          <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
-          <Stack.Screen name="highlights" options={{ headerShown: true, title: 'My highlights' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </LambGuideProvider>
-    </AuthProvider>
+    <ArtStyleProvider>
+      <AuthProvider>
+        <LambGuideProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create group' }} />
+            <Stack.Screen name="join-group" options={{ headerShown: true, title: 'Join group' }} />
+            <Stack.Screen name="profile" options={{ headerShown: true, title: 'Profile' }} />
+            <Stack.Screen name="highlights" options={{ headerShown: true, title: 'My highlights' }} />
+            <Stack.Screen name="compare-styles" options={{ headerShown: true, title: 'Compare styles' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </LambGuideProvider>
+      </AuthProvider>
+    </ArtStyleProvider>
   );
 }
