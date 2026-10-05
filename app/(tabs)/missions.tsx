@@ -8,35 +8,60 @@ import { LambGuide } from '../../components/guide/LambGuide';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
 import { getDropsSummary, type DropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
+import { SECTION_LABELS } from '../../lib/mission-config';
 import { getMissionSummary, type MissionProgress, type MissionSummary } from '../../lib/missions';
 
 function tierForReward(reward: number): BadgeTier {
-  if (reward >= 60) return 'special';
-  if (reward >= 40) return 'gold';
+  if (reward >= 150) return 'special';
+  if (reward >= 60) return 'gold';
   if (reward >= 20) return 'silver';
   return 'bronze';
 }
 
-function MissionCard({ mission, timeLabel }: { mission: MissionProgress; timeLabel?: string }) {
+function MissionCard({ mission }: { mission: MissionProgress }) {
   const percent = mission.target > 0 ? (mission.progress / mission.target) * 100 : 0;
+
+  let progressLabel: string;
+  if (mission.repeatable) {
+    progressLabel = mission.timesEarned && mission.timesEarned > 0 ? `Earned ${mission.timesEarned}×` : 'Not yet';
+  } else if (mission.achieved) {
+    progressLabel = 'Complete!';
+  } else if (mission.bookNames) {
+    progressLabel = `${mission.progress} / ${mission.target} books`;
+  } else {
+    progressLabel = `${mission.progress} / ${mission.target}`;
+  }
+
   return (
     <View style={[styles.card, mission.achieved && styles.cardAchieved]}>
       <Badge tier={tierForReward(mission.reward)} achieved={mission.achieved} pixelSize={3} />
       <View style={styles.cardBody}>
         <View style={styles.cardTopRow}>
-          <Text style={styles.cardTitle}>{mission.title}</Text>
+          <View style={styles.cardTitleBlock}>
+            <Text style={styles.cardTitle}>{mission.title}</Text>
+            <Text style={styles.cardVerse}>{mission.verse}</Text>
+          </View>
           <View style={styles.rewardTag}>
-            <Text style={styles.rewardTagText}>+{mission.reward} 💧</Text>
+            <Text style={styles.rewardTagText}>
+              {mission.repeatable ? `+${mission.reward} ea` : `+${mission.reward}`} 💧
+            </Text>
           </View>
         </View>
         <Text style={styles.cardDescription}>{mission.description}</Text>
-        <ProgressBar percent={percent} segments={8} />
+        {!mission.repeatable && <ProgressBar percent={percent} segments={8} />}
         <View style={styles.cardBottomRow}>
-          <Text style={styles.cardProgressText}>
-            {mission.achieved ? 'Complete!' : `${mission.progress} / ${mission.target}`}
-          </Text>
-          {timeLabel && !mission.achieved && <Text style={styles.cardTimeText}>{timeLabel}</Text>}
+          <Text style={styles.cardProgressText}>{progressLabel}</Text>
+          {mission.daysLeft !== undefined && !mission.achieved && (
+            <Text style={styles.cardTimeText}>{mission.daysLeft}d left</Text>
+          )}
         </View>
+        {mission.bookNames && (
+          <Text style={styles.bookList}>
+            {mission.bookNames
+              .map((name) => `${mission.booksDone?.includes(name) ? '✓' : '·'} ${name}`)
+              .join('   ')}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -119,19 +144,16 @@ export default function MissionsScreen() {
         style={styles.lambGuide}
       />
 
-      <Text style={styles.sectionLabel}>This week &amp; month</Text>
-      <View style={styles.list}>
-        {missions.periodMissions.map((mission) => (
-          <MissionCard key={mission.key} mission={mission} timeLabel={mission.daysLeft !== undefined ? `${mission.daysLeft}d left` : undefined} />
-        ))}
-      </View>
-
-      <Text style={styles.sectionLabel}>Milestone badges</Text>
-      <View style={styles.list}>
-        {missions.milestones.map((mission) => (
-          <MissionCard key={mission.key} mission={mission} />
-        ))}
-      </View>
+      {missions.sections.map(({ section, missions: sectionMissions }) => (
+        <View key={section}>
+          <Text style={styles.sectionLabel}>{SECTION_LABELS[section]}</Text>
+          <View style={styles.list}>
+            {sectionMissions.map((mission) => (
+              <MissionCard key={mission.key} mission={mission} />
+            ))}
+          </View>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -206,6 +228,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     marginTop: 8,
+    marginBottom: 10,
     fontFamily: FONTS.headingSemiBold,
     fontSize: 13,
     color: COLORS.textMuted,
@@ -233,14 +256,21 @@ const styles = StyleSheet.create({
   cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
-  cardTitle: {
+  cardTitleBlock: {
     flex: 1,
+  },
+  cardTitle: {
     fontFamily: FONTS.headingSemiBold,
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  cardVerse: {
+    fontFamily: FONTS.serifItalic,
+    fontSize: 11,
+    color: COLORS.sageDark,
   },
   rewardTag: {
     borderWidth: 1.5,
@@ -271,6 +301,11 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   cardTimeText: {
+    fontFamily: FONTS.serif,
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  bookList: {
     fontFamily: FONTS.serif,
     fontSize: 11,
     color: COLORS.textMuted,

@@ -58,6 +58,7 @@ export default function BibleScreen() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [justCheckedIn, setJustCheckedIn] = useState(false);
+  const [bookJustFinished, setBookJustFinished] = useState<string | null>(null);
 
   // Re-anchor to today's chapter whenever the group's book or start date
   // actually changes (initial load, or after picking a new book) — but not
@@ -144,8 +145,13 @@ export default function BibleScreen() {
         });
         setCurrentCheckin(checkin);
         setPhotoUrl(await getSignedPhotoUrl(path));
+        const newCheckedCount = checkedChapters.size + 1;
         setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
-        setJustCheckedIn(true);
+        if (newCheckedCount === maxChapter) {
+          setBookJustFinished(group.book);
+        } else {
+          setJustCheckedIn(true);
+        }
       }
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
@@ -294,7 +300,20 @@ export default function BibleScreen() {
         </View>
       )}
 
-      {justCheckedIn && (
+      {bookJustFinished && (
+        <LambGuide
+          id="bible-book-finished"
+          message={`You finished ${bookJustFinished}! Well done, good and faithful servant.`}
+          pose="happy"
+          sparkles
+          actions={[
+            { label: 'Add a reflection', primary: true, onPress: () => setBookJustFinished(null) },
+            { label: 'Maybe later', onPress: () => setBookJustFinished(null) },
+          ]}
+        />
+      )}
+
+      {justCheckedIn && !bookJustFinished && (
         <LambGuide
           id="bible-celebration"
           message="Well done! Want to share what stood out?"

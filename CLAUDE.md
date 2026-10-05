@@ -53,9 +53,13 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 
 ### Missions (bonus ways to earn drops)
 - A dedicated "Missions" tab (bottom nav, next to Read and Groups) — personal, not tied to one group. It counts your reading across every group combined.
-- **This week / this month:** e.g. "Read 5 days this week," "Read 15 days this month." These reset each period, but once you've earned a period's bonus it stays in your balance for good — it doesn't get taken back when the period ends.
-- **Milestone badges** (one-time, lifetime): e.g. total chapters read (10/25/50), reflections posted, finishing a whole book start to end, sharing your first prayer request.
-- All mission rewards and targets live in one config file (`lib/mission-config.ts`) so they're easy to tune. No separate database table — everything is computed live from check-ins/reflections/prayers, same as the drops balance.
+- Missions are grouped into six sections: **This week & month** (resets each period, but a period's bonus stays earned for good once hit), **Reading**, **Finishing books**, **Community**, **Garden**, and **Grace**.
+- Every mission has a name, a Bible verse reference (shown under the title), a target, and a drop reward. The full list lives in `lib/mission-config.ts` — that file is the source of truth, not this doc, so it can be tuned without touching code elsewhere.
+- A "finishing a book" mission means every chapter of that book has been checked in, combining check-ins from every group (same book, any group, any order) — not just that enough calendar days have passed.
+- Some "finish a book" missions require a *set* of books (e.g. all four Gospels, the whole New Testament, the whole Bible) — progress shows as "X / Y books" with which ones are done.
+- The Grace section's "Prodigal Returns" mission is repeatable — it can be earned again every time someone checks in after 7+ days of rest in a group, not just once.
+- Finishing a book also shows a one-time lamb celebration on the Bible screen: "You finished [Book]! Well done, good and faithful servant."
+- Everything is computed live from check-ins, reflections, prayers, and reactions — no separate mission-progress table, same as the drops balance.
 
 ### Garden animals and items (bought with drops; show the verse when unlocked)
 | Item | Verse | Price |
