@@ -226,8 +226,8 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
   - Sky and background: white `#FFFFFF`
 - **Lamb design (v2):** a side-view sheep with a fluffy white-and-cream wool body (a lighter top, slightly deeper cream underside), a pale cream face with pink cheek blush and simple dot eyes, and tan legs with hooves — not the original plain white/black design. Moods: happy, waiting, praying (share one calm standing pose), sleeping (adds a small "z" trail), waving and pointing (add a small raised or outstretched leg). Give it a simple 2-frame idle animation (a bob or blink) when animated.
 - **Type:**
-  - Use a pixel font (e.g., "Pixelify Sans" or "Silkscreen" from Google Fonts) for headings, numbers, and buttons.
-  - Use a highly readable serif (e.g., "Literata") for the Bible text and reflections. Scripture must be comfortable to read.
+  - Use a pixel font ("Geist Pixel" from Google Fonts) for headings, numbers, and buttons. It only ships one weight (Regular), so there's no separate bold variant.
+  - Use a highly readable font ("Inter" from Google Fonts) for the Bible text and reflections. Scripture must be comfortable to read.
 - **UI elements:** chunky square-ish buttons with 2–3 px black borders and a hard offset shadow (no blur), plus a pixel-style progress bar for the weekly goal.
 - **Motion:** keep it minimal. Use the lamb's idle animation and a small celebration when a tree grows a stage.
 - Must look good on a phone screen first.

@@ -1,10 +1,10 @@
 import { GeistPixel_400Regular } from '@expo-google-fonts/geist-pixel';
 import {
-  Literata_400Regular,
-  Literata_400Regular_Italic,
-  Literata_500Medium,
-  Literata_600SemiBold,
-} from '@expo-google-fonts/literata';
+  Inter_400Regular,
+  Inter_400Regular_Italic,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -17,10 +17,10 @@ import { LambGuideProvider } from '../components/guide/guide-context';
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     GeistPixel_400Regular,
-    Literata_400Regular,
-    Literata_500Medium,
-    Literata_600SemiBold,
-    Literata_400Regular_Italic,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_400Regular_Italic,
   });
 
   if (!fontsLoaded) {
