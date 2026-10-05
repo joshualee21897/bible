@@ -7,8 +7,12 @@ import { useAuth } from '../../lib/auth-context';
 import { getErrorMessage } from '../../lib/error-message';
 import { getMyProfile } from '../../lib/profile';
 
-function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
-  return <Text style={[styles.glyph, focused && styles.glyphFocused]}>{glyph}</Text>;
+function TabIcon({ glyph, focused, color }: { glyph: string; focused: boolean; color: string }) {
+  return (
+    <View style={[styles.iconBox, focused && { backgroundColor: color, borderColor: COLORS.border }]}>
+      <Text style={[styles.glyph, focused && styles.glyphFocused]}>{glyph}</Text>
+    </View>
+  );
 }
 
 export default function TabsLayout() {
@@ -75,28 +79,28 @@ export default function TabsLayout() {
         name="today"
         options={{
           title: 'Today',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="⌂" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon glyph="⌂" focused={focused} color={COLORS.sage} />,
         }}
       />
       <Tabs.Screen
         name="read"
         options={{
           title: 'Read',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="▤" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon glyph="▤" focused={focused} color={COLORS.water} />,
         }}
       />
       <Tabs.Screen
         name="missions"
         options={{
           title: 'Missions',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="✦" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon glyph="✦" focused={focused} color={COLORS.yellow} />,
         }}
       />
       <Tabs.Screen
         name="groups"
         options={{
           title: 'Groups',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="••" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon glyph="••" focused={focused} color={COLORS.lavender} />,
         }}
       />
     </Tabs>
@@ -137,6 +141,15 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingMedium,
     fontSize: 11,
     marginTop: 2,
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   glyph: {
     fontSize: 18,
