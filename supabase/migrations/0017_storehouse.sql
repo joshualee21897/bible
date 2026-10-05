@@ -77,9 +77,18 @@ insert into garden_item_prices (item_key, price) values
   ('lanterns', 70)
 on conflict (item_key) do update set price = excluded.price;
 
+create table if not exists storehouse_deposits (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  amount int not null check (amount > 0),
+  created_at timestamptz not null default now()
+);
+
 -- A person's drops balance, worked out the same way the app does (earned
 -- from daily drops and missions, minus spent in any shop, minus given to
 -- any Storehouse) — used below to block a deposit that would overdraw.
+-- Must come after storehouse_deposits is created — it reads from it.
 create or replace function fn_personal_balance(p_user_id uuid)
 returns integer
 language sql
@@ -109,14 +118,6 @@ as $$
       where sd.user_id = p_user_id
     ), 0);
 $$;
-
-create table if not exists storehouse_deposits (
-  id uuid primary key default gen_random_uuid(),
-  group_id uuid not null references groups (id) on delete cascade,
-  user_id uuid not null references auth.users (id) on delete cascade,
-  amount int not null check (amount > 0),
-  created_at timestamptz not null default now()
-);
 
 create or replace function fn_check_storehouse_deposit()
 returns trigger
