@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { buttonBase, COLORS, FONTS } from '../theme';
+import { useArtStyle } from '../../lib/art-style-context';
 import type { DailyDropKey, DailyDropRow } from '../../lib/daily-drops';
+import { CrayonDailyDrops } from '../crayon/CrayonDailyDrops';
 
 type Props = {
   rows: DailyDropRow[];
@@ -84,7 +86,19 @@ function DailyDropRowItem({
 }
 
 export function DailyDrops({ rows, allCollected, onCollect, onDailyBreadPress }: Props) {
+  const { artStyle } = useArtStyle();
   const [collapsed, setCollapsed] = useState(allCollected);
+
+  if (artStyle === 'crayon') {
+    return (
+      <CrayonDailyDrops
+        rows={rows}
+        allCollected={allCollected}
+        onCollect={onCollect}
+        onDailyBreadPress={onDailyBreadPress}
+      />
+    );
+  }
 
   useEffect(() => {
     if (allCollected) setCollapsed(true);

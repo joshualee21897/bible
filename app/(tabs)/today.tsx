@@ -3,94 +3,28 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../components/guide/LambGuide';
+import { CrayonTodayView } from '../../components/crayon/CrayonTodayView';
 import { MonthCalendar } from '../../components/today/MonthCalendar';
 import { WeekStrip } from '../../components/today/WeekStrip';
 import { Avatar } from '../../components/pixel/Avatar';
-import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
+import { useArtStyle } from '../../lib/art-style-context';
 import { getMyDashboard, type MyDashboard, type MyGroupToday } from '../../lib/dashboard';
 import { getDropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
 import { getGroupPulses, type GroupPulse } from '../../lib/group-pulse';
 import { getMyProfile, type Profile } from '../../lib/profile';
 import { getReactionsFor } from '../../lib/reactions';
+import { buildLambGuide, greeting, groupPulseText, pluralize } from '../../lib/today-helpers';
 import { getNextStage, getStageProgressPercent, getTreeStage, getTreeStageLabel, type TreeStage } from '../../lib/tree';
 
 const WEEKLY_PERSONAL_GOAL = 5;
-const RESTING_AFTER_DAYS = 3;
 const STAGE_ORDER: TreeStage[] = ['seed', 'sprout', 'sapling', 'tree', 'fruiting'];
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
-function pluralize(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`;
-}
-
-function buildLambGuide(
-  dashboard: MyDashboard,
-  stage: TreeStage,
-  grewStage: boolean
-): { message: string; pose: LambMood; sparkles: boolean } {
-  if (grewStage) {
-    return { message: 'Your tree just grew! Keep going.', pose: 'happy', sparkles: true };
-  }
-
-  const groupThatBoreFruit = dashboard.groups.find((row) => row.meetsHarvestThreshold);
-  if (groupThatBoreFruit) {
-    return {
-      message: 'Our garden bore fruit this week! Time for a Harvest Supper?',
-      pose: 'happy',
-      sparkles: true,
-    };
-  }
-
-  const daysSinceLastCheckin = dashboard.lastCheckinAt
-    ? (Date.now() - new Date(dashboard.lastCheckinAt).getTime()) / (1000 * 60 * 60 * 24)
-    : null;
-  if (daysSinceLastCheckin !== null && daysSinceLastCheckin >= RESTING_AFTER_DAYS) {
-    return { message: 'Welcome back! His mercies are new every morning.', pose: 'waving', sparkles: false };
-  }
-
-  if (new Date().getDay() === 0) {
-    return { message: 'Be strong and of a good courage. — Joshua 1:9', pose: 'happy', sparkles: false };
-  }
-
-  if (dashboard.groups.length === 0) {
-    return { message: 'Join or create a group to start a garden.', pose: 'waving', sparkles: false };
-  }
-
-  const waitingGroups = dashboard.groups.filter((row) => !row.checkedInToday);
-  if (waitingGroups.length === 0) {
-    return { message: `${greeting()}! Our gardens are happy today.`, pose: 'happy', sparkles: false };
-  }
-  if (waitingGroups.length === 1) {
-    const row = waitingGroups[0];
-    return {
-      message: row.finished ? `${greeting()}! Your groups have a chapter waiting.` : `${row.group.book} ${row.todayChapter} is waiting for you.`,
-      pose: 'waving',
-      sparkles: false,
-    };
-  }
-
-  return { message: `You have ${pluralize(waitingGroups.length, 'chapter')} waiting for you.`, pose: 'waving', sparkles: false };
-}
-
-function groupPulseText(pulse: GroupPulse | undefined): string {
-  if (!pulse) return 'No activity yet today';
-  const parts: string[] = [];
-  if (pulse.latestCheckinName) parts.push(`${pulse.latestCheckinName} checked in`);
-  if (pulse.newPrayersCount > 0) parts.push(`${pluralize(pulse.newPrayersCount, 'new prayer')}`);
-  return parts.length > 0 ? parts.join(' · ') : 'No activity yet today';
-}
-
 export default function TodayDashboard() {
+  const { artStyle } = useArtStyle();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
   const [balance, setBalance] = useState(0);
@@ -165,6 +99,31 @@ export default function TodayDashboard() {
   const nextStage = getNextStage(dashboard.totalCheckins);
   const stageProgressPercent = getStageProgressPercent(dashboard.totalCheckins);
   const lambGuide = buildLambGuide(dashboard, stage, grewStage);
+
+  if (artStyle === 'crayon') {
+    return (
+      <CrayonTodayView
+        profile={profile}
+        dashboard={dashboard}
+        balance={balance}
+        stage={stage}
+        nextStage={nextStage}
+        stageProgressPercent={stageProgressPercent}
+        lambGuide={lambGuide}
+        amenCounts={amenCounts}
+        groupPulses={groupPulses}
+        monthExpanded={monthExpanded}
+        setMonthExpanded={setMonthExpanded}
+        refreshing={refreshing}
+        onRefresh={() => {
+          setRefreshing(true);
+          load();
+        }}
+        errorMessage={errorMessage}
+        weeklyGoal={WEEKLY_PERSONAL_GOAL}
+      />
+    );
+  }
 
   function renderReadingRow(row: MyGroupToday) {
     const amenCount = row.todayCheckinId ? (amenCounts[row.todayCheckinId] ?? 0) : 0;

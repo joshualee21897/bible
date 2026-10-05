@@ -3,11 +3,9 @@ import { View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, FeDisplacementMap, FeTurbulence, Filter, G, Line, Rect } from 'react-native-svg';
 
 import { CRAYON_COLORS } from '../../lib/theme-crayon';
+import type { TreeStage } from '../../lib/tree';
 
-// Matches lib/tree.ts's TreeStage keys so callers can pass the same value.
-export type CrayonTreeStage = 'seed' | 'sprout' | 'sapling' | 'tree' | 'fruiting';
-
-type Props = { stage: CrayonTreeStage; size?: number };
+type Props = { stage: TreeStage; size?: number };
 
 const TRUNK = '#8B5A34';
 
