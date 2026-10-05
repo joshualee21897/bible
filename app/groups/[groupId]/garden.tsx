@@ -8,6 +8,7 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -22,7 +23,7 @@ import { ProgressBar } from '../../../components/pixel/ProgressBar';
 import { Tree } from '../../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../../components/theme';
 import { PALETTE } from '../../../components/pixel/palette';
-import { confirmAction, showAlert } from '../../../lib/alert';
+import { showAlert } from '../../../lib/alert';
 import { getChapterCount } from '../../../lib/bible-books';
 import { useAuth } from '../../../lib/auth-context';
 import { getCurrentChapterNumber, getGroupMembersWithCheckinCounts, getMyCheckedChapters, type MemberWithStats } from '../../../lib/checkins';
@@ -40,7 +41,7 @@ const SKY_HEIGHT = 70;
 const GROUND_BAND_HEIGHT = 32;
 const FENCE_HEIGHT = 24;
 
-type SheetKind = 'balance' | 'invite' | 'week' | null;
+type SheetKind = 'balance' | 'invite' | 'week' | 'leave' | null;
 
 export default function GroupGardenScreen() {
   const { group } = useGroup();
@@ -55,6 +56,8 @@ export default function GroupGardenScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [openSheet, setOpenSheet] = useState<SheetKind>(null);
+  const [leaveText, setLeaveText] = useState('');
+  const [leaving, setLeaving] = useState(false);
 
   const sceneHeight = Math.round(windowHeight * 0.75);
   const sceneWidth = windowWidth - 32;
@@ -111,17 +114,15 @@ export default function GroupGardenScreen() {
 
   async function handleLeaveGroup() {
     if (!group) return;
-    const confirmed = await confirmAction(
-      `Leave ${group.name}? You'll need a new invite code to rejoin.`,
-      'Leave'
-    );
-    if (!confirmed) return;
+    if (leaveText.trim().toLowerCase() !== group.name.trim().toLowerCase()) return;
 
+    setLeaving(true);
     try {
       await leaveGroup(group.id);
       router.replace('/groups');
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
+      setLeaving(false);
     }
   }
 
@@ -193,13 +194,6 @@ export default function GroupGardenScreen() {
       return (
         <View key="lamb" style={styles.gridCell}>
           <Lamb mood={lambMood} pixelSize={PIXEL_SIZE} />
-          <View style={styles.labelPill}>
-            <Text style={styles.labelStage}>
-              {lambMood === 'sleeping' && 'Asleep'}
-              {lambMood === 'waiting' && 'Waiting for you'}
-              {lambMood === 'happy' && 'Happy'}
-            </Text>
-          </View>
         </View>
       );
     }
@@ -229,6 +223,14 @@ export default function GroupGardenScreen() {
         <View>
           <Text style={styles.title}>Our garden</Text>
           <Text style={styles.subtitle}>{group.name}</Text>
+        </View>
+        <View style={styles.topRowActions}>
+          <Pressable style={styles.balanceBadge} onPress={() => setOpenSheet('balance')}>
+            <Text style={styles.balanceBadgeText}>💧 {drops.balance}</Text>
+          </Pressable>
+          <Pressable style={styles.inviteBadge} onPress={() => setOpenSheet('invite')}>
+            <Text style={styles.inviteBadgeText}>🔑</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -265,19 +267,21 @@ export default function GroupGardenScreen() {
       </View>
 
       <View style={styles.iconRow}>
-        <Pressable style={styles.iconButton} onPress={() => setOpenSheet('balance')}>
-          <Text style={styles.iconGlyph}>💧</Text>
-          <Text style={styles.iconLabel}>{drops.balance}</Text>
-        </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => setOpenSheet('invite')}>
-          <Text style={styles.iconGlyph}>🔑</Text>
-          <Text style={styles.iconLabel}>Invite</Text>
+        <Pressable style={styles.iconButton} onPress={() => router.push(`/groups/${group.id}/shop`)}>
+          <Text style={styles.iconGlyph}>▤</Text>
+          <Text style={styles.iconLabel}>Shop</Text>
         </Pressable>
         <Pressable style={styles.iconButton} onPress={() => setOpenSheet('week')}>
           <Text style={styles.iconGlyph}>📅</Text>
           <Text style={styles.iconLabel}>This week</Text>
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={handleLeaveGroup}>
+        <Pressable
+          style={styles.iconButton}
+          onPress={() => {
+            setLeaveText('');
+            setOpenSheet('leave');
+          }}
+        >
           <Text style={styles.iconGlyph}>🚪</Text>
           <Text style={styles.iconLabel}>Leave</Text>
         </Pressable>
@@ -328,6 +332,32 @@ export default function GroupGardenScreen() {
           </View>
         )}
       </InfoSheet>
+
+      <InfoSheet visible={openSheet === 'leave'} title="Leave this group" onClose={() => setOpenSheet(null)}>
+        <Text style={styles.leaveBody}>
+          You'll need a new invite code to rejoin. To confirm, type the group's name:{' '}
+          <Text style={styles.leaveGroupName}>{group.name}</Text>
+        </Text>
+        <TextInput
+          style={styles.leaveInput}
+          value={leaveText}
+          onChangeText={setLeaveText}
+          placeholder={group.name}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Pressable
+          style={[
+            styles.leaveButton,
+            (leaveText.trim().toLowerCase() !== group.name.trim().toLowerCase() || leaving) &&
+              styles.leaveButtonDisabled,
+          ]}
+          onPress={handleLeaveGroup}
+          disabled={leaveText.trim().toLowerCase() !== group.name.trim().toLowerCase() || leaving}
+        >
+          <Text style={styles.leaveButtonText}>{leaving ? 'Leaving…' : `Leave ${group.name}`}</Text>
+        </Pressable>
+      </InfoSheet>
     </ScrollView>
   );
 }
@@ -370,6 +400,38 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
+  },
+  topRowActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  balanceBadge: {
+    ...HARD_SHADOW,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.water,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  balanceBadgeText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  inviteBadge: {
+    ...HARD_SHADOW,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.yellow,
+    borderRadius: 8,
+  },
+  inviteBadgeText: {
+    fontSize: 15,
   },
   subtitle: {
     marginTop: 2,
@@ -528,6 +590,40 @@ const styles = StyleSheet.create({
   inviteShareButtonText: {
     fontFamily: FONTS.headingSemiBold,
     fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  leaveBody: {
+    fontFamily: FONTS.serif,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+    lineHeight: 19,
+  },
+  leaveGroupName: {
+    fontFamily: FONTS.headingSemiBold,
+    color: COLORS.textPrimary,
+  },
+  leaveInput: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.white,
+    fontFamily: FONTS.serif,
+    color: COLORS.textPrimary,
+  },
+  leaveButton: {
+    ...buttonBase,
+    backgroundColor: COLORS.pink,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  leaveButtonDisabled: {
+    backgroundColor: COLORS.cream,
+    opacity: 0.6,
+  },
+  leaveButtonText: {
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
   },
   goalCard: {
