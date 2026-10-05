@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 
 import { KIND_OPTIONS, KindTag } from '../../../components/checkins/KindTag';
 import { LambGuide } from '../../../components/guide/LambGuide';
+import { BookPickerSheet } from '../../../components/read/BookPickerSheet';
 import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
 import { BIBLE_BOOKS, getChapterCount } from '../../../lib/bible-books';
@@ -40,6 +41,7 @@ export default function BibleScreen() {
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [nextBook, setNextBook] = useState(BIBLE_BOOKS[0].name);
   const [changingBook, setChangingBook] = useState(false);
+  const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [checkedChapters, setCheckedChapters] = useState<Set<number>>(new Set());
   const [currentCheckin, setCurrentCheckin] = useState<Checkin | null>(null);
   const [selectedKind, setSelectedKind] = useState<CheckinKind>('reflection');
@@ -167,17 +169,19 @@ export default function BibleScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.reference}>You've finished {group.book}!</Text>
         <Text style={styles.label}>Our garden is proud of how far we've come. Pick the next book to keep reading.</Text>
-        <ScrollView horizontal style={styles.bookPicker} showsHorizontalScrollIndicator={false}>
-          {BIBLE_BOOKS.map((b) => (
-            <Pressable
-              key={b.name}
-              onPress={() => setNextBook(b.name)}
-              style={[styles.chip, nextBook === b.name && styles.chipSelected]}
-            >
-              <Text style={[styles.chipText, nextBook === b.name && styles.chipTextSelected]}>{b.name}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <Pressable style={styles.bookPickerButton} onPress={() => setBookSheetOpen(true)}>
+          <Text style={styles.bookPickerButtonText}>{nextBook}</Text>
+          <Text style={styles.bookPickerCaret}>▾</Text>
+        </Pressable>
+        <BookPickerSheet
+          visible={bookSheetOpen}
+          selectedBook={nextBook}
+          onClose={() => setBookSheetOpen(false)}
+          onSelect={(selected) => {
+            setNextBook(selected);
+            setBookSheetOpen(false);
+          }}
+        />
         <Pressable style={styles.button} onPress={handleChangeBook} disabled={changingBook}>
           <Text style={styles.buttonText}>{changingBook ? 'Starting…' : `Start reading ${nextBook}`}</Text>
         </Pressable>
@@ -373,9 +377,25 @@ const styles = StyleSheet.create({
   versesLoading: {
     marginVertical: 24,
   },
-  bookPicker: {
+  bookPickerButton: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: 12,
     marginVertical: 8,
+    backgroundColor: COLORS.white,
+  },
+  bookPickerButtonText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  bookPickerCaret: {
+    fontSize: 13,
+    color: COLORS.textMuted,
   },
   verses: {
     gap: 6,

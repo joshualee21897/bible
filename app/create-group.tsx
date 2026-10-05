@@ -2,8 +2,9 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { BookPickerSheet } from '../components/read/BookPickerSheet';
 import { LambGuide } from '../components/guide/LambGuide';
-import { buttonBase, COLORS } from '../components/theme';
+import { buttonBase, COLORS, FONTS } from '../components/theme';
 import { showAlert } from '../lib/alert';
 import { BIBLE_BOOKS } from '../lib/bible-books';
 import { getErrorMessage } from '../lib/error-message';
@@ -19,6 +20,7 @@ export default function CreateGroupScreen() {
   const [startDate, setStartDate] = useState(todayAsInputDate());
   const [weeklyTarget, setWeeklyTarget] = useState('5');
   const [saving, setSaving] = useState(false);
+  const [bookSheetOpen, setBookSheetOpen] = useState(false);
 
   async function handleCreate() {
     const trimmedName = name.trim();
@@ -71,17 +73,20 @@ export default function CreateGroupScreen() {
       <TextInput style={styles.input} placeholder="e.g. Cell group" value={name} onChangeText={setName} />
 
       <Text style={styles.label}>Book</Text>
-      <ScrollView horizontal style={styles.bookPicker} showsHorizontalScrollIndicator={false}>
-        {BIBLE_BOOKS.map((b) => (
-          <Pressable
-            key={b.name}
-            onPress={() => setBook(b.name)}
-            style={[styles.bookChip, book === b.name && styles.bookChipSelected]}
-          >
-            <Text style={[styles.bookChipText, book === b.name && styles.bookChipTextSelected]}>{b.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <Pressable style={styles.bookPickerButton} onPress={() => setBookSheetOpen(true)}>
+        <Text style={styles.bookPickerButtonText}>{book}</Text>
+        <Text style={styles.bookPickerCaret}>▾</Text>
+      </Pressable>
+
+      <BookPickerSheet
+        visible={bookSheetOpen}
+        selectedBook={book}
+        onClose={() => setBookSheetOpen(false)}
+        onSelect={(selected) => {
+          setBook(selected);
+          setBookSheetOpen(false);
+        }}
+      />
 
       <Text style={styles.label}>Start date</Text>
       <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
@@ -134,27 +139,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     color: COLORS.textPrimary,
   },
-  bookPicker: {
+  bookPickerButton: {
     flexDirection: 'row',
-  },
-  bookChip: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 2,
     borderColor: COLORS.border,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
+    borderRadius: 8,
+    padding: 12,
     backgroundColor: COLORS.surface,
   },
-  bookChipSelected: {
-    backgroundColor: COLORS.accent,
-  },
-  bookChipText: {
+  bookPickerButtonText: {
+    fontFamily: FONTS.headingSemiBold,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
-  bookChipTextSelected: {
-    color: COLORS.accentText,
-    fontWeight: 'bold',
+  bookPickerCaret: {
+    fontSize: 13,
+    color: COLORS.textMuted,
   },
   button: {
     ...buttonBase,
