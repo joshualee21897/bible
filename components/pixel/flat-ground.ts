@@ -28,3 +28,36 @@ export function buildFlatGround(width: number, height = 14): PixelGridData {
 
   return grid;
 }
+
+// A simple fence line — posts with two rails — used to mark off the bought
+// animals/items from everyone's trees in the 2D garden scene.
+export function buildFlatFence(width: number, height = 20): PixelGridData {
+  const grid: PixelGridData = emptyGrid(width, height);
+
+  const railTop = Math.round(height * 0.3);
+  const railBottom = Math.round(height * 0.65);
+  for (let x = 0; x < width; x++) {
+    setPixel(grid, x, railTop, 'bark');
+    setPixel(grid, x, railTop + 1, 'bark');
+    setPixel(grid, x, railBottom, 'bark');
+    setPixel(grid, x, railBottom + 1, 'bark');
+  }
+
+  const postSpacing = 28;
+  for (let x = 6; x < width; x += postSpacing) {
+    for (let y = 1; y < height - 1; y++) {
+      setPixel(grid, x, y, 'barkShade');
+      setPixel(grid, x + 1, y, 'barkShade');
+    }
+    setPixel(grid, x - 1, 0, 'outline');
+    setPixel(grid, x, 0, 'outline');
+    setPixel(grid, x + 1, 0, 'outline');
+    setPixel(grid, x + 2, 0, 'outline');
+    setPixel(grid, x - 1, height - 1, 'outline');
+    setPixel(grid, x, height - 1, 'outline');
+    setPixel(grid, x + 1, height - 1, 'outline');
+    setPixel(grid, x + 2, height - 1, 'outline');
+  }
+
+  return grid;
+}

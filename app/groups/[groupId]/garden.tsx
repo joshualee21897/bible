@@ -14,7 +14,7 @@ import {
 
 import { InfoSheet } from '../../../components/garden/InfoSheet';
 import { LambGuide } from '../../../components/guide/LambGuide';
-import { buildFlatGround } from '../../../components/pixel/flat-ground';
+import { buildFlatFence, buildFlatGround } from '../../../components/pixel/flat-ground';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { PixelGrid } from '../../../components/pixel/PixelGrid';
@@ -39,6 +39,7 @@ const PIXEL_SIZE = 3;
 const COLUMNS = 3;
 const SKY_HEIGHT = 70;
 const GROUND_BAND_HEIGHT = 32;
+const FENCE_HEIGHT = 24;
 
 type SheetKind = 'balance' | 'invite' | 'week' | null;
 
@@ -60,6 +61,10 @@ export default function GroupGardenScreen() {
   const sceneWidth = windowWidth - 32;
   const groundGrid = useMemo(
     () => buildFlatGround(Math.round(sceneWidth / (GROUND_BAND_HEIGHT / 14))),
+    [sceneWidth]
+  );
+  const fenceGrid = useMemo(
+    () => buildFlatFence(Math.round(sceneWidth / (FENCE_HEIGHT / 20))),
     [sceneWidth]
   );
 
@@ -150,17 +155,60 @@ export default function GroupGardenScreen() {
 
   const lambMood = getLambMood(hasCheckedInToday);
 
-  // Everyone's tree, then the lamb, then anything the group has bought —
-  // all standing in a row on the same stretch of grass.
+  // Bought animals and items live up near the sky, fenced off from
+  // everyone's trees and the lamb below.
   type Slot =
     | { kind: 'member'; member: MemberWithStats }
     | { kind: 'lamb' }
     | { kind: 'item'; itemKey: string };
-  const slots: Slot[] = [
+  const itemSlots: Slot[] = ownedItemKeys.map((itemKey): Slot => ({ kind: 'item', itemKey }));
+  const memberSlots: Slot[] = [
     ...members.map((member): Slot => ({ kind: 'member', member })),
     { kind: 'lamb' },
-    ...ownedItemKeys.map((itemKey): Slot => ({ kind: 'item', itemKey })),
   ];
+  const slots: Slot[] = [...itemSlots, ...memberSlots];
+
+  function renderSlot(slot: Slot) {
+    if (slot.kind === 'member') {
+      const stage = getTreeStage(slot.member.checkin_count);
+      const resting = isTreeResting(slot.member.last_checkin_at, slot.member.checkin_count);
+      return (
+        <View key={slot.member.user_id} style={styles.gridCell}>
+          <Tree stage={stage} resting={resting} pixelSize={PIXEL_SIZE} showGround={false} />
+          <View style={styles.labelPill}>
+            <Text style={styles.labelName} numberOfLines={1}>
+              {slot.member.display_name}
+            </Text>
+            <Text style={styles.labelStage}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
+          </View>
+        </View>
+      );
+    }
+    if (slot.kind === 'lamb') {
+      return (
+        <View key="lamb" style={styles.gridCell}>
+          <Lamb mood={lambMood} pixelSize={PIXEL_SIZE} />
+          <View style={styles.labelPill}>
+            <Text style={styles.labelStage}>
+              {lambMood === 'sleeping' && 'Asleep'}
+              {lambMood === 'waiting' && 'Waiting for you'}
+              {lambMood === 'happy' && 'Happy'}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View key={slot.itemKey} style={styles.gridCell}>
+        <GardenItemSprite itemKey={slot.itemKey} pixelSize={PIXEL_SIZE} />
+        <View style={styles.labelPill}>
+          <Text style={styles.labelStage} numberOfLines={1}>
+            {getGardenItem(slot.itemKey)?.name ?? slot.itemKey}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -205,47 +253,13 @@ export default function GroupGardenScreen() {
             showsVerticalScrollIndicator={slots.length > COLUMNS}
             contentContainerStyle={styles.grid}
           >
-            {slots.map((slot) => {
-              if (slot.kind === 'member') {
-                const stage = getTreeStage(slot.member.checkin_count);
-                const resting = isTreeResting(slot.member.last_checkin_at, slot.member.checkin_count);
-                return (
-                  <View key={slot.member.user_id} style={styles.gridCell}>
-                    <Tree stage={stage} resting={resting} pixelSize={PIXEL_SIZE} showGround={false} />
-                    <View style={styles.labelPill}>
-                      <Text style={styles.labelName} numberOfLines={1}>
-                        {slot.member.display_name}
-                      </Text>
-                      <Text style={styles.labelStage}>{resting ? 'Resting' : getTreeStageLabel(stage)}</Text>
-                    </View>
-                  </View>
-                );
-              }
-              if (slot.kind === 'lamb') {
-                return (
-                  <View key="lamb" style={styles.gridCell}>
-                    <Lamb mood={lambMood} pixelSize={PIXEL_SIZE} />
-                    <View style={styles.labelPill}>
-                      <Text style={styles.labelStage}>
-                        {lambMood === 'sleeping' && 'Asleep'}
-                        {lambMood === 'waiting' && 'Waiting for you'}
-                        {lambMood === 'happy' && 'Happy'}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              }
-              return (
-                <View key={slot.itemKey} style={styles.gridCell}>
-                  <GardenItemSprite itemKey={slot.itemKey} pixelSize={PIXEL_SIZE} />
-                  <View style={styles.labelPill}>
-                    <Text style={styles.labelStage} numberOfLines={1}>
-                      {getGardenItem(slot.itemKey)?.name ?? slot.itemKey}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
+            {itemSlots.map(renderSlot)}
+            {itemSlots.length > 0 && (
+              <View style={styles.fenceRow}>
+                <PixelGrid grid={fenceGrid} pixelSize={FENCE_HEIGHT / 20} />
+              </View>
+            )}
+            {memberSlots.map(renderSlot)}
           </ScrollView>
         </View>
 
@@ -397,6 +411,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,
     paddingHorizontal: 4,
+  },
+  fenceRow: {
+    width: '100%',
+    marginTop: 12,
+    alignItems: 'center',
   },
   scrollHint: {
     position: 'absolute',
