@@ -54,10 +54,10 @@ export const PALETTE = {
 } as const;
 
 export const AVATAR_COLORS = [
-  PALETTE.grassDark,
-  PALETTE.bark,
-  PALETTE.waterDark,
-  PALETTE.fruit,
+  PALETTE.grassRestingLight,
+  PALETTE.cheekLight,
+  PALETTE.waterLight,
   PALETTE.lavender,
-  PALETTE.goldDark,
+  PALETTE.goldLight,
+  PALETTE.faceCream,
 ] as const;
