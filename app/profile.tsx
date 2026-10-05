@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { AVATAR_COLORS } from '../components/pixel/palette';
 import { buttonBase, COLORS } from '../components/theme';
 import { showAlert } from '../lib/alert';
+import { useArtStyle, type ArtStyle } from '../lib/art-style-context';
 import { useAuth } from '../lib/auth-context';
 import { getErrorMessage } from '../lib/error-message';
 import { getMyProfile, updateMyProfile } from '../lib/profile';
@@ -12,6 +13,7 @@ import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const { artStyle, setArtStyle } = useArtStyle();
   const [displayName, setDisplayName] = useState('');
   const [avatarColor, setAvatarColor] = useState<string>(AVATAR_COLORS[0]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,25 @@ export default function ProfileScreen() {
 
       <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
         <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save'}</Text>
+      </Pressable>
+
+      <Text style={styles.label}>Art style</Text>
+      <Text style={styles.helperText}>Experimental — testing a hand-drawn crayon look on the Today tab.</Text>
+      <View style={styles.artStyleRow}>
+        {(['pixel', 'crayon'] as ArtStyle[]).map((option) => (
+          <Pressable
+            key={option}
+            style={[styles.artStyleOption, artStyle === option && styles.artStyleOptionSelected]}
+            onPress={() => setArtStyle(option)}
+          >
+            <Text style={[styles.artStyleOptionText, artStyle === option && styles.artStyleOptionTextSelected]}>
+              {option === 'pixel' ? 'Pixel' : 'Crayon (beta)'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable onPress={() => router.push('/compare-styles')}>
+        <Text style={styles.compareLink}>Compare styles →</Text>
       </Pressable>
 
       <Pressable onPress={handleSignOut}>
@@ -154,5 +175,39 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textDecorationLine: 'underline',
     textAlign: 'center',
+  },
+  helperText: {
+    marginTop: 2,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  artStyleRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  artStyleOption: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+  },
+  artStyleOptionSelected: {
+    backgroundColor: COLORS.sage,
+  },
+  artStyleOptionText: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  artStyleOptionTextSelected: {
+    color: COLORS.textPrimary,
+  },
+  compareLink: {
+    marginTop: 10,
+    color: COLORS.sageDark,
+    fontWeight: '600',
   },
 });
