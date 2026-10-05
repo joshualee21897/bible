@@ -37,6 +37,21 @@ export function getStageProgressPercent(checkinCount: number): number {
   return Math.min(100, Math.round(((checkinCount - lower) / (next.minCheckins - lower)) * 100));
 }
 
+// The progress bar toward the next stage, as whole chapters rather than a
+// percent — so "2 more to grow" always matches exactly 2 empty boxes.
+// null once a tree has reached the last stage (no next stage to show).
+export function getStageSegments(checkinCount: number): { segments: number; filled: number } | null {
+  const ascending = [...STAGE_THRESHOLDS].reverse();
+  const stageIndex = ascending.findIndex((entry, index) => {
+    const next = ascending[index + 1];
+    return checkinCount >= entry.minCheckins && (!next || checkinCount < next.minCheckins);
+  });
+  const lower = ascending[stageIndex].minCheckins;
+  const next = ascending[stageIndex + 1];
+  if (!next) return null;
+  return { segments: next.minCheckins - lower, filled: checkinCount - lower };
+}
+
 const RESTING_AFTER_DAYS = 3;
 
 // A tree that hasn't grown yet (a seed) isn't "resting" — it just hasn't
