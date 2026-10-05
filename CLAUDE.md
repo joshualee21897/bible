@@ -128,7 +128,7 @@ Compute drops (earned minus spent) and tree stages from the data, rather than st
 
 ### Security (must have)
 - Turn on **row-level security** on every table.
-- A user can only read groups, members, check-ins, and items for groups they belong to.
+- A user can only read groups, members, check-ins, and items for groups they belong to — plus a group they just created, even before they're added as a member (closes a gap where creating a group would otherwise fail).
 - A user can only create check-ins for themselves.
 - A user can only read and insert their own daily_claims rows.
 - Joining a group requires a valid invite code.

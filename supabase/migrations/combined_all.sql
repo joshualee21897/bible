@@ -305,7 +305,7 @@ drop policy if exists "Members can view their groups" on groups;
 create policy "Members can view their groups"
   on groups for select
   to authenticated
-  using (is_group_member(id));
+  using (is_group_member(id) or created_by = auth.uid());
 
 drop policy if exists "Members can update their groups" on groups;
 create policy "Members can update their groups"
