@@ -9,8 +9,7 @@ export type MissionSection = 'period' | 'reading' | 'books' | 'community' | 'gar
 export type DailyDropKey =
   | 'morning_manna'
   | 'daily_bread'
-  | 'fruit_of_the_lips'
-  | 'snapshot_of_grace'
+  | 'iron_sharpens_iron'
   | 'second_mile'
   | 'stand_in_the_gap';
 
@@ -34,22 +33,15 @@ export const DAILY_DROPS: DailyDropDef[] = [
     key: 'daily_bread',
     title: 'Daily Bread',
     verse: 'Matthew 6:11',
-    description: "Read today's chapter in any group.",
+    description: 'Check in with a reflection today.',
     reward: 10,
   },
   {
-    key: 'fruit_of_the_lips',
-    title: 'Fruit of the Lips',
-    verse: 'Hebrews 13:15',
-    description: 'Add a reflection today.',
-    reward: 3,
-  },
-  {
-    key: 'snapshot_of_grace',
-    title: 'Snapshot of Grace',
-    verse: '',
-    description: 'Add a photo to a check-in today.',
-    reward: 3,
+    key: 'iron_sharpens_iron',
+    title: 'Iron Sharpens Iron',
+    verse: 'Proverbs 27:17',
+    description: "Tap Amen on someone's reflection today.",
+    reward: 2,
   },
   {
     key: 'second_mile',
@@ -70,7 +62,8 @@ export const DAILY_DROPS: DailyDropDef[] = [
 export type CountMetric =
   | 'totalCheckins'
   | 'reflections'
-  | 'photoCheckins'
+  | 'actionCheckins'
+  | 'revelationCheckins'
   | 'prayersShared'
   | 'amensGiven'
   | 'prayingTaps'
@@ -356,25 +349,25 @@ export const BOOK_MISSIONS: (CountMissionDef | BooksMissionDef)[] = [
 export const COMMUNITY_MISSIONS: CountMissionDef[] = [
   {
     kind: 'count',
-    key: 'pondered_in_her_heart',
+    key: 'doers_of_the_word',
     section: 'community',
-    title: 'Pondered in Her Heart',
-    verse: 'Luke 2:19',
-    description: 'Post 10 reflections.',
+    title: 'Doers of the Word',
+    verse: 'James 1:22',
+    description: 'Post 10 check-ins tagged Action.',
     reward: 20,
     target: 10,
-    metric: 'reflections',
+    metric: 'actionCheckins',
   },
   {
     kind: 'count',
-    key: 'twelve_baskets',
+    key: 'eyes_to_see',
     section: 'community',
-    title: 'Twelve Baskets',
-    verse: 'Matthew 14:20',
-    description: 'Post 12 check-ins with a photo.',
+    title: 'Eyes to See',
+    verse: 'Ephesians 1:18',
+    description: 'Post 10 check-ins tagged Revelation.',
     reward: 20,
-    target: 12,
-    metric: 'photoCheckins',
+    target: 10,
+    metric: 'revelationCheckins',
   },
   {
     kind: 'count',

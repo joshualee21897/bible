@@ -31,7 +31,7 @@ export type MissionSummary = {
   bonusDropsEarned: number;
 };
 
-type CheckinRow = { group_id: string; book: string; chapter: number; reflection: string | null; photo_path: string | null; created_at: string };
+type CheckinRow = { group_id: string; book: string; chapter: number; reflection: string | null; kind: string; created_at: string };
 
 const REST_DAYS_FOR_COMEBACK = 7;
 
@@ -135,7 +135,7 @@ export async function getMissionSummary(): Promise<MissionSummary> {
   const userId = await requireUserId();
 
   const [checkinsResult, prayersResult, reactionsResult, animalsResult, largestGroupMemberCount] = await Promise.all([
-    supabase.from('checkins').select('group_id, book, chapter, reflection, photo_path, created_at').eq('user_id', userId),
+    supabase.from('checkins').select('group_id, book, chapter, reflection, kind, created_at').eq('user_id', userId),
     supabase.from('prayers').select('answered').eq('user_id', userId),
     supabase.from('reactions').select('target_type').eq('user_id', userId),
     supabase.from('group_items').select('item_key').eq('bought_by', userId),
@@ -153,7 +153,8 @@ export async function getMissionSummary(): Promise<MissionSummary> {
 
   const totalCheckins = checkins.length;
   const reflectionCount = checkins.filter((c) => c.reflection).length;
-  const photoCheckinCount = checkins.filter((c) => c.photo_path).length;
+  const actionCheckinCount = checkins.filter((c) => c.kind === 'action').length;
+  const revelationCheckinCount = checkins.filter((c) => c.kind === 'revelation').length;
   const prayersSharedCount = prayers.length;
   const prayersAnsweredCount = prayers.filter((p) => p.answered).length;
   const amensGivenCount = reactions.filter((r) => r.target_type === 'checkin').length;
@@ -173,7 +174,8 @@ export async function getMissionSummary(): Promise<MissionSummary> {
   const metricValues: Record<CountMetric, number> = {
     totalCheckins,
     reflections: reflectionCount,
-    photoCheckins: photoCheckinCount,
+    actionCheckins: actionCheckinCount,
+    revelationCheckins: revelationCheckinCount,
     prayersShared: prayersSharedCount,
     amensGiven: amensGivenCount,
     prayingTaps: prayingTapsCount,

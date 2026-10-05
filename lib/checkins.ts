@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 
+export type CheckinKind = 'reflection' | 'revelation' | 'action';
+
 export type Checkin = {
   id: string;
   group_id: string;
@@ -8,6 +10,7 @@ export type Checkin = {
   chapter: number;
   reflection: string | null;
   photo_path: string | null;
+  kind: CheckinKind;
   created_at: string;
 };
 
@@ -59,8 +62,8 @@ export async function createCheckin(input: {
   groupId: string;
   book: string;
   chapter: number;
-  reflection?: string | null;
-  photoPath?: string | null;
+  reflection: string;
+  kind: CheckinKind;
 }): Promise<Checkin> {
   const userId = await requireUserId();
 
@@ -71,8 +74,8 @@ export async function createCheckin(input: {
       user_id: userId,
       book: input.book,
       chapter: input.chapter,
-      reflection: input.reflection ?? null,
-      photo_path: input.photoPath ?? null,
+      reflection: input.reflection,
+      kind: input.kind,
     })
     .select()
     .single();
@@ -99,11 +102,11 @@ export async function getMyCheckin(groupId: string, book: string, chapter: numbe
 
 export async function updateCheckin(
   checkinId: string,
-  updates: { reflection?: string | null; photoPath?: string | null }
+  updates: { reflection?: string; kind?: CheckinKind }
 ): Promise<Checkin> {
-  const patch: { reflection?: string | null; photo_path?: string | null } = {};
+  const patch: { reflection?: string; kind?: CheckinKind } = {};
   if (updates.reflection !== undefined) patch.reflection = updates.reflection;
-  if (updates.photoPath !== undefined) patch.photo_path = updates.photoPath;
+  if (updates.kind !== undefined) patch.kind = updates.kind;
 
   const { data, error } = await supabase.from('checkins').update(patch).eq('id', checkinId).select().single();
 
@@ -139,37 +142,6 @@ export async function getGroupMembersWithCheckinCounts(groupId: string): Promise
       checkin_count: counts.get(row.user_id) ?? 0,
       last_checkin_at: lastCheckinAt.get(row.user_id) ?? null,
     }));
-}
-
-export async function uploadCheckinPhoto(
-  groupId: string,
-  userId: string,
-  fileUri: string,
-  mimeType: string
-): Promise<string> {
-  const extension = mimeType.split('/')[1] ?? 'jpg';
-  const path = `${groupId}/${userId}/${Date.now()}.${extension}`;
-
-  const response = await fetch(fileUri);
-  const arrayBuffer = await response.arrayBuffer();
-
-  const { error } = await supabase.storage.from('checkin-photos').upload(path, arrayBuffer, {
-    contentType: mimeType,
-    upsert: false,
-  });
-
-  if (error) throw error;
-  return path;
-}
-
-export async function getSignedPhotoUrl(photoPath: string): Promise<string | null> {
-  const { data, error } = await supabase.storage.from('checkin-photos').createSignedUrl(photoPath, 60 * 60);
-  if (error) return null;
-  return data.signedUrl;
-}
-
-export async function deleteCheckinPhoto(photoPath: string): Promise<void> {
-  await supabase.storage.from('checkin-photos').remove([photoPath]);
 }
 
 // A check-in can still be changed on the day it was made — once a new day

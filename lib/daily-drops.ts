@@ -44,11 +44,11 @@ export async function getDailyDrops(): Promise<DailyDropsSummary> {
   const todayKey = localDateKey(now);
   const todayStart = startOfLocalDay(now);
 
-  const [groupsResult, checkinsResult, reactionsResult, claimsResult] = await Promise.all([
+  const [groupsResult, checkinsResult, prayingReactionsResult, amenReactionsResult, claimsResult] = await Promise.all([
     supabase.from('group_members').select('groups(id, book, start_date)').eq('user_id', userId),
     supabase
       .from('checkins')
-      .select('group_id, chapter, reflection, photo_path')
+      .select('group_id, chapter')
       .eq('user_id', userId)
       .gte('created_at', todayStart.toISOString()),
     supabase
@@ -57,12 +57,19 @@ export async function getDailyDrops(): Promise<DailyDropsSummary> {
       .eq('user_id', userId)
       .eq('target_type', 'prayer')
       .gte('created_at', todayStart.toISOString()),
+    supabase
+      .from('reactions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('target_type', 'checkin')
+      .gte('created_at', todayStart.toISOString()),
     supabase.from('daily_claims').select('claim_key').eq('user_id', userId).eq('claim_date', todayKey),
   ]);
 
   if (groupsResult.error) throw groupsResult.error;
   if (checkinsResult.error) throw checkinsResult.error;
-  if (reactionsResult.error) throw reactionsResult.error;
+  if (prayingReactionsResult.error) throw prayingReactionsResult.error;
+  if (amenReactionsResult.error) throw amenReactionsResult.error;
   if (claimsResult.error) throw claimsResult.error;
 
   const groupRows = (groupsResult.data ?? []) as unknown as {
@@ -80,10 +87,9 @@ export async function getDailyDrops(): Promise<DailyDropsSummary> {
   const eligibility: Record<DailyDropKey, boolean> = {
     morning_manna: true,
     daily_bread: checkinsToday.some((c) => c.chapter === todayChapterByGroup.get(c.group_id)),
-    fruit_of_the_lips: checkinsToday.some((c) => Boolean(c.reflection)),
-    snapshot_of_grace: checkinsToday.some((c) => Boolean(c.photo_path)),
+    iron_sharpens_iron: (amenReactionsResult.data ?? []).length > 0,
     second_mile: checkinsToday.length >= 2,
-    stand_in_the_gap: (reactionsResult.data ?? []).length > 0,
+    stand_in_the_gap: (prayingReactionsResult.data ?? []).length > 0,
   };
 
   const rows: DailyDropRow[] = DAILY_DROPS.map((def) => {

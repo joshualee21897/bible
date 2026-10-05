@@ -1,17 +1,7 @@
-import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { KIND_OPTIONS, KindTag } from '../../../components/checkins/KindTag';
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { buttonBase, COLORS, FONTS } from '../../../components/theme';
 import { showAlert } from '../../../lib/alert';
@@ -20,20 +10,20 @@ import { getChapterVerses } from '../../../lib/bible';
 import { useAuth } from '../../../lib/auth-context';
 import {
   createCheckin,
-  deleteCheckinPhoto,
   getCurrentChapterNumber,
   getMyCheckedChapters,
   getMyCheckin,
-  getSignedPhotoUrl,
   isBookFinished,
   isEditableToday,
   updateCheckin,
-  uploadCheckinPhoto,
   type Checkin,
+  type CheckinKind,
 } from '../../../lib/checkins';
 import { getErrorMessage } from '../../../lib/error-message';
 import { changeGroupBook } from '../../../lib/groups';
 import { useGroup } from '../../../lib/group-context';
+
+const MIN_REFLECTION_LENGTH = 10;
 
 function todayAsInputDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -52,8 +42,8 @@ export default function BibleScreen() {
   const [changingBook, setChangingBook] = useState(false);
   const [checkedChapters, setCheckedChapters] = useState<Set<number>>(new Set());
   const [currentCheckin, setCurrentCheckin] = useState<Checkin | null>(null);
-  const [reflectionDraft, setReflectionDraft] = useState('');
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [selectedKind, setSelectedKind] = useState<CheckinKind>('reflection');
+  const [draftText, setDraftText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,12 +71,8 @@ export default function BibleScreen() {
         ]);
         setCheckedChapters(checked);
         setCurrentCheckin(checkin);
-        setReflectionDraft(checkin?.reflection ?? '');
-        if (checkin?.photo_path) {
-          setPhotoUrl(await getSignedPhotoUrl(checkin.photo_path));
-        } else {
-          setPhotoUrl(null);
-        }
+        setDraftText(checkin?.reflection ?? '');
+        setSelectedKind(checkin?.kind ?? 'reflection');
         setErrorMessage(null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -120,31 +106,26 @@ export default function BibleScreen() {
     return list;
   }, [todayChapter, checkedChapters]);
 
-  async function handlePhotoPicked(asset: ImagePicker.ImagePickerAsset) {
-    if (!group || selectedChapter === null || !session) return;
+  const canSubmit = draftText.trim().length >= MIN_REFLECTION_LENGTH;
+
+  async function handleCheckIn() {
+    if (!group || selectedChapter === null || !session || !canSubmit) return;
 
     setSaving(true);
     try {
-      const path = await uploadCheckinPhoto(group.id, session.user.id, asset.uri, asset.mimeType ?? 'image/jpeg');
-
+      const text = draftText.trim();
       if (currentCheckin) {
-        // Replacing the photo on an existing, still-editable check-in.
-        const oldPath = currentCheckin.photo_path;
-        const updated = await updateCheckin(currentCheckin.id, { photoPath: path });
+        const updated = await updateCheckin(currentCheckin.id, { reflection: text, kind: selectedKind });
         setCurrentCheckin(updated);
-        setPhotoUrl(await getSignedPhotoUrl(path));
-        if (oldPath && oldPath !== path) {
-          deleteCheckinPhoto(oldPath).catch(() => {});
-        }
       } else {
         const checkin = await createCheckin({
           groupId: group.id,
           book: group.book,
           chapter: selectedChapter,
-          photoPath: path,
+          reflection: text,
+          kind: selectedKind,
         });
         setCurrentCheckin(checkin);
-        setPhotoUrl(await getSignedPhotoUrl(path));
         const newCheckedCount = checkedChapters.size + 1;
         setCheckedChapters((prev) => new Set(prev).add(selectedChapter));
         if (newCheckedCount === maxChapter) {
@@ -153,41 +134,6 @@ export default function BibleScreen() {
           setJustCheckedIn(true);
         }
       }
-    } catch (error) {
-      showAlert('Something went wrong', getErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleTakePhoto() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      showAlert('Camera access needed', 'A photo is how you check in — allow camera access to continue.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (result.canceled || !result.assets[0]) return;
-    await handlePhotoPicked(result.assets[0]);
-  }
-
-  async function handleChoosePhoto() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showAlert('Photo access needed', 'A photo is how you check in — allow photo access to continue.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
-    if (result.canceled || !result.assets[0]) return;
-    await handlePhotoPicked(result.assets[0]);
-  }
-
-  async function handleSaveReflection() {
-    if (!currentCheckin) return;
-    setSaving(true);
-    try {
-      const updated = await updateCheckin(currentCheckin.id, { reflection: reflectionDraft.trim() || null });
-      setCurrentCheckin(updated);
     } catch (error) {
       showAlert('Something went wrong', getErrorMessage(error));
     } finally {
@@ -239,6 +185,8 @@ export default function BibleScreen() {
     );
   }
 
+  const editable = !currentCheckin || isEditableToday(currentCheckin.created_at);
+
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
@@ -269,35 +217,9 @@ export default function BibleScreen() {
       {!currentCheckin && (
         <LambGuide
           id="bible"
-          message={[
-            "Read today's chapter, then add a photo to check in.",
-            'A photo of your Bible or coffee is all it takes.',
-            'Take your time — the chapter will be here all day.',
-          ]}
+          message="Read, then share one thing God put on your heart."
           pose="pointing"
         />
-      )}
-
-      {!loading && !currentCheckin && (
-        <View style={styles.checkInSection}>
-          <Text style={styles.label}>
-            Add a photo — your Bible, your coffee, wherever you're reading — to check in.
-          </Text>
-          {Platform.OS !== 'web' && (
-            <Pressable style={styles.button} onPress={handleTakePhoto} disabled={saving}>
-              <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Take a photo to check in'}</Text>
-            </Pressable>
-          )}
-          <Pressable
-            style={Platform.OS !== 'web' ? styles.secondaryButton : styles.button}
-            onPress={handleChoosePhoto}
-            disabled={saving}
-          >
-            <Text style={Platform.OS !== 'web' ? styles.secondaryButtonText : styles.buttonText}>
-              {saving ? 'Saving…' : Platform.OS !== 'web' ? 'Choose from library' : 'Add a photo to check in'}
-            </Text>
-          </Pressable>
-        </View>
       )}
 
       {bookJustFinished && (
@@ -306,65 +228,61 @@ export default function BibleScreen() {
           message={`You finished ${bookJustFinished}! Well done, good and faithful servant.`}
           pose="happy"
           sparkles
-          actions={[
-            { label: 'Add a reflection', primary: true, onPress: () => setBookJustFinished(null) },
-            { label: 'Maybe later', onPress: () => setBookJustFinished(null) },
-          ]}
+          actions={[{ label: 'Amen', primary: true, onPress: () => setBookJustFinished(null) }]}
         />
       )}
 
       {justCheckedIn && !bookJustFinished && (
-        <LambGuide
-          id="bible-celebration"
-          message="Well done! Want to share what stood out?"
-          pose="happy"
-          sparkles
-          actions={[
-            { label: 'Add a reflection', primary: true, onPress: () => setJustCheckedIn(false) },
-            { label: 'Maybe later', onPress: () => setJustCheckedIn(false) },
-          ]}
-        />
+        <LambGuide id="bible-celebration" message="Well done, good and faithful servant." pose="happy" sparkles />
       )}
 
-      {!loading && currentCheckin && (
-        <View style={styles.afterReadSection}>
-          <Text style={styles.doneLabel}>You've checked in for this chapter.</Text>
-
-          {photoUrl && <Image source={{ uri: photoUrl }} style={styles.photo} />}
-
-          {isEditableToday(currentCheckin.created_at) ? (
+      {!loading && (
+        <View style={editable ? styles.checkInSection : styles.afterReadSection}>
+          {editable ? (
             <>
-              {Platform.OS !== 'web' && (
-                <Pressable style={styles.secondaryButton} onPress={handleTakePhoto} disabled={saving}>
-                  <Text style={styles.secondaryButtonText}>{saving ? 'Saving…' : 'Retake photo'}</Text>
-                </Pressable>
-              )}
-              <Pressable style={styles.secondaryButton} onPress={handleChoosePhoto} disabled={saving}>
-                <Text style={styles.secondaryButtonText}>
-                  {saving ? 'Saving…' : Platform.OS !== 'web' ? 'Choose a different photo' : 'Change photo'}
-                </Text>
-              </Pressable>
-
-              <Text style={styles.label}>Reflection (optional)</Text>
+              <Text style={styles.label}>{currentCheckin ? 'Update your check-in' : "What's on your heart?"}</Text>
+              <View style={styles.kindRow}>
+                {KIND_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.key}
+                    style={[styles.chip, selectedKind === option.key && styles.chipSelected]}
+                    onPress={() => setSelectedKind(option.key)}
+                  >
+                    <Text style={[styles.chipText, selectedKind === option.key && styles.chipTextSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
               <TextInput
                 style={styles.reflectionInput}
-                placeholder="What stood out to you?"
+                placeholder={KIND_OPTIONS.find((o) => o.key === selectedKind)?.placeholder}
                 multiline
-                value={reflectionDraft}
-                onChangeText={setReflectionDraft}
+                value={draftText}
+                onChangeText={setDraftText}
               />
-              <Pressable style={styles.secondaryButton} onPress={handleSaveReflection} disabled={saving}>
-                <Text style={styles.secondaryButtonText}>
-                  {currentCheckin.reflection ? 'Update reflection' : 'Post reflection'}
+              <Pressable
+                style={[styles.button, !canSubmit && styles.buttonDisabled]}
+                onPress={handleCheckIn}
+                disabled={!canSubmit || saving}
+              >
+                <Text style={styles.buttonText}>
+                  {saving ? 'Saving…' : currentCheckin ? 'Save changes' : 'Check in'}
                 </Text>
               </Pressable>
-              <Text style={styles.lockNote}>You can still change this today — it's set once the day ends.</Text>
+              {currentCheckin && (
+                <Text style={styles.lockNote}>You can still change this today — it's set once the day ends.</Text>
+              )}
             </>
           ) : (
-            <>
-              {currentCheckin.reflection && <Text style={styles.reflectionReadonly}>{currentCheckin.reflection}</Text>}
-              <Text style={styles.lockNote}>This check-in is from an earlier day and can't be changed.</Text>
-            </>
+            currentCheckin && (
+              <>
+                <Text style={styles.doneLabel}>You've checked in for this chapter.</Text>
+                <KindTag kind={currentCheckin.kind} />
+                <Text style={styles.reflectionReadonly}>{currentCheckin.reflection}</Text>
+                <Text style={styles.lockNote}>This check-in is from an earlier day and can't be changed.</Text>
+              </>
+            )
           )}
         </View>
       )}
@@ -480,6 +398,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonDisabled: {
+    backgroundColor: COLORS.cream,
+    opacity: 0.6,
+  },
   buttonText: {
     fontFamily: FONTS.headingSemiBold,
     color: COLORS.textPrimary,
@@ -502,12 +424,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: COLORS.textPrimary,
   },
+  kindRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   reflectionInput: {
     borderWidth: 2,
     borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
-    minHeight: 60,
+    minHeight: 80,
     textAlignVertical: 'top',
     backgroundColor: COLORS.white,
     fontFamily: FONTS.serif,
@@ -536,11 +462,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontStyle: 'italic',
     color: COLORS.textPrimary,
-  },
-  photo: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: 8,
   },
   catchUp: {
     marginTop: 16,

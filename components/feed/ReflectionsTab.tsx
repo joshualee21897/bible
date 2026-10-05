@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { KindTag } from '../checkins/KindTag';
 import { LambGuide } from '../guide/LambGuide';
 import { Tree } from '../pixel/Tree';
 import { COLORS, FONTS, HARD_SHADOW } from '../theme';
-import {
-  getGroupFeed,
-  getGroupMembersWithCheckinCounts,
-  getSignedPhotoUrl,
-  type CheckinWithProfile,
-} from '../../lib/checkins';
+import { getGroupFeed, getGroupMembersWithCheckinCounts, type CheckinWithProfile } from '../../lib/checkins';
 import { getErrorMessage } from '../../lib/error-message';
 import { addReaction, getReactionsFor, removeReaction } from '../../lib/reactions';
 import { timeAgo } from '../../lib/time-ago';
@@ -17,7 +13,6 @@ import { getTreeStage, getTreeStageLabel } from '../../lib/tree';
 
 export function ReflectionsTab({ groupId }: { groupId: string }) {
   const [feed, setFeed] = useState<CheckinWithProfile[] | null>(null);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({});
   const [amenCounts, setAmenCounts] = useState<Record<string, number>>({});
   const [myAmens, setMyAmens] = useState<Set<string>>(new Set());
@@ -34,19 +29,10 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
       setCheckinCounts(Object.fromEntries(members.map((member) => [member.user_id, member.checkin_count])));
       setErrorMessage(null);
 
-      const withPhotos = items.filter((item) => item.photo_path);
-      const [urlEntries, reactions] = await Promise.all([
-        Promise.all(withPhotos.map(async (item) => [item.id, await getSignedPhotoUrl(item.photo_path!)] as const)),
-        getReactionsFor(
-          'checkin',
-          items.map((item) => item.id)
-        ),
-      ]);
-      const urlMap: Record<string, string> = {};
-      for (const [id, url] of urlEntries) {
-        if (url) urlMap[id] = url;
-      }
-      setPhotoUrls(urlMap);
+      const reactions = await getReactionsFor(
+        'checkin',
+        items.map((item) => item.id)
+      );
       setAmenCounts(reactions.counts);
       setMyAmens(reactions.mine);
     } catch (error) {
@@ -144,9 +130,7 @@ export function ReflectionsTab({ groupId }: { groupId: string }) {
                   <Text style={styles.readCheckGlyph}>✓</Text>
                 </View>
               </View>
-              {item.photo_path && photoUrls[item.id] && (
-                <Image source={{ uri: photoUrls[item.id] }} style={styles.photo} />
-              )}
+              <KindTag kind={item.kind} />
               {item.reflection && <Text style={styles.reflection}>"{item.reflection}"</Text>}
               <Pressable
                 style={[styles.amenButton, amened && styles.amenButtonActive]}
@@ -252,13 +236,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.serifItalic,
     fontSize: 14,
     color: COLORS.textPrimary,
-  },
-  photo: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.border,
   },
   amenButton: {
     alignSelf: 'flex-start',

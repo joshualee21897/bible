@@ -17,15 +17,14 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - **Now:** a web app my friends can open from a link and "Add to Home Screen."
 - **Later:** the same code built into iPhone and Android apps.
 - **So:** use **Expo (React Native) with Expo Router and TypeScript**, exported to web and deployed on **Vercel**. Later use **EAS Build** for the app stores.
-- **Backend:** **Supabase** (auth, Postgres database, storage for photos).
+- **Backend:** **Supabase** (auth, Postgres database). No photo storage for now — see rule 1 below.
 
 ## Core rules of the app
-1. **A photo is the check-in.** Adding a photo (BeReal-style, like their Bible and coffee) is how a person checks in — no photo, no check-in. (Changed from the original "reading alone counts" rule, by explicit request.)
-2. **Reflection is optional.** After checking in with a photo, a person can also add a short reflection.
-3. **One chapter a day.** The group picks a book and a start date. Day 1 = chapter 1, Day 2 = chapter 2, and so on.
-4. **Catch-up is allowed.** Anyone can read and check in on earlier chapters they missed.
-5. **A person can be in several groups.** A check-in belongs to one group. If someone is in two groups reading different books, they check in separately.
-6. **Grace, not guilt.** See the wording rules below.
+1. **A written reflection is the check-in.** No photo step for now (removed to stay on Supabase's free storage tier, until a permanent solution is found) — writing at least 10 characters is how a person checks in; it's required, not optional. They pick one of three kinds first: **Reflection** ("What stood out to you today?"), **Revelation** ("What did God show you?"), or **Action** ("What will you do because of this?"). The kind is saved with the check-in (`kind` column) and shown as a small pastel tag in the feed. (The `photo_path` column and the `checkin-photos` storage bucket still exist but are unused — nothing was deleted.)
+2. **One chapter a day.** The group picks a book and a start date. Day 1 = chapter 1, Day 2 = chapter 2, and so on.
+3. **Catch-up is allowed.** Anyone can read and check in on earlier chapters they missed.
+4. **A person can be in several groups.** A check-in belongs to one group. If someone is in two groups reading different books, they check in separately.
+5. **Grace, not guilt.** See the wording rules below.
 
 ## Bible text
 - Use the **KJV (public domain)** only for now.
@@ -100,16 +99,15 @@ Treat the prices as a starting point. Keep them in one config file so I can twea
 - Use "resting" for inactive trees.
 - Nudges should be warm, e.g., "Your garden misses you" or "The lamb is waiting by your tree."
 - Speak in "we": "Our garden grew this week."
-- Use sentence case and plain words. Buttons say exactly what happens ("Take a photo to check in," "Post reflection").
+- Use sentence case and plain words. Buttons say exactly what happens ("Check in," "Save changes").
 
 ## Screens
 1. **Sign in:** email magic link (simplest for testing). Add Google and Apple sign-in later, in Phase 3.
 2. **My groups:** a list of my groups, plus "Create group" (name, book, start date, weekly target) and "Join group" (6-character invite code).
 3. **Today (per group):** today's chapter in KJV, readable and scrollable. At the bottom:
-   - A photo is required to check in (camera or gallery via `expo-image-picker`, which also works on web).
-   - After checking in, optional "Add a reflection."
+   - Pick a kind (Reflection / Revelation / Action), write at least 10 characters, then "Check in."
    - A small list of earlier chapters I haven't checked in yet, for catch-up.
-4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, reflection, and photo. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
+4. **Group feed:** everyone's check-ins, newest first, showing an avatar (their tree at its current stage), name, chapter, a small kind tag, and the reflection text. Keep it simple, with no likes for now (maybe a single 🙏 reaction later).
 5. **Garden:** pixel-art scene with everyone's tree (name under each), the lamb, bought animals and items, the viewer's own drop balance, and a shop button.
 6. **Shop:** buy animals and items with your personal drops, for this group's garden. Show the verse when bought.
 7. **Missions:** a global tab (not per group) with bonus ways to earn drops — this week/month goals and lifetime milestone badges, counted across all your groups.
@@ -121,9 +119,10 @@ Write these as SQL migrations I can run in the Supabase SQL editor.
 - `profiles`: id (= auth user id), display_name, avatar_color, created_at
 - `groups`: id, name, invite_code (unique), book, start_date, weekly_target (default 5), created_by, created_at
 - `group_members`: group_id, user_id, role (owner/member), joined_at
-- `checkins`: id, group_id, user_id, book, chapter, reflection (nullable), photo_path (nullable), created_at
+- `checkins`: id, group_id, user_id, book, chapter, reflection (required, 10+ chars), kind (reflection/revelation/action), photo_path (nullable, unused — see core rule 1), created_at
   - Unique on (group_id, user_id, book, chapter) so the same chapter can't be counted twice.
 - `group_items`: id, group_id, item_key, bought_by, created_at
+- `daily_claims`: id, user_id, claim_key, claim_date, created_at — unique on (user_id, claim_key, claim_date).
 
 Compute drops (earned minus spent) and tree stages from the data, rather than storing them, so they can't get out of sync.
 
@@ -131,7 +130,7 @@ Compute drops (earned minus spent) and tree stages from the data, rather than st
 - Turn on **row-level security** on every table.
 - A user can only read groups, members, check-ins, and items for groups they belong to.
 - A user can only create check-ins for themselves.
-- Photos go in a **private** storage bucket, `checkin-photos`, with the path `group_id/user_id/filename`. Only group members can view them, via signed URLs.
+- A user can only read and insert their own daily_claims rows.
 - Joining a group requires a valid invite code.
 
 ## Art direction: 8-bit pixel art
@@ -165,7 +164,7 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 
 ### Phase 1 — Web MVP (goal: my friends can use it)
 - Expo project setup, Supabase connection, email sign-in.
-- Create/join group, Today screen with KJV and a required photo to check in, optional reflection, and the group feed.
+- Create/join group, Today screen with KJV and a required reflection to check in, and the group feed.
 - A simple garden with each person's tree stage and the lamb.
 - Deploy to Vercel, with instructions for "Add to Home Screen" on iPhone and Android.
 
@@ -185,6 +184,6 @@ The style should feel like the Charlie app: chunky pixel sprites, thick black ou
 
 ## Definition of done for Phase 1
 - I can create a group and share the code, and a friend can join from a different phone.
-- We both see the same chapter, can check in, and can see each other's check-ins and photos in the feed.
+- We both see the same chapter, can check in, and can see each other's check-ins and reflections in the feed.
 - Trees show the right stage, and the lamb appears in the garden.
 - Someone who isn't in the group cannot see its content.
