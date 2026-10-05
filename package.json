@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/geist-pixel": "^0.4.0",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/literata": "^0.4.3",
     "@expo-google-fonts/patrick-hand": "^0.4.1",
     "@expo/metro-runtime": "^57.0.16",

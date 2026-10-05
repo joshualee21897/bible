@@ -40,10 +40,10 @@ export const FONTS = {
   headingSemiBold: 'GeistPixel_400Regular',
   headingMedium: 'GeistPixel_400Regular',
   headingRegular: 'GeistPixel_400Regular',
-  serif: 'Literata_400Regular',
-  serifMedium: 'Literata_500Medium',
-  serifSemiBold: 'Literata_600SemiBold',
-  serifItalic: 'Literata_400Regular_Italic',
+  serif: 'Inter_400Regular',
+  serifMedium: 'Inter_500Medium',
+  serifSemiBold: 'Inter_600SemiBold',
+  serifItalic: 'Inter_400Regular_Italic',
 } as const;
 
 export const HARD_SHADOW = {

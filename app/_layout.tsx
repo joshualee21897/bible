@@ -5,6 +5,12 @@ import {
   Literata_500Medium,
   Literata_600SemiBold,
 } from '@expo-google-fonts/literata';
+import {
+  Inter_400Regular,
+  Inter_400Regular_Italic,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 import { PatrickHand_400Regular } from '@expo-google-fonts/patrick-hand';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -23,6 +29,10 @@ export default function RootLayout() {
     Literata_500Medium,
     Literata_600SemiBold,
     Literata_400Regular_Italic,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_400Regular_Italic,
     PatrickHand_400Regular,
   });
 
