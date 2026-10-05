@@ -46,10 +46,18 @@ Inspiration: "yoked" (partner Bible check-ins) and "Charlie" (pixel pet that gro
 - If someone hasn't checked in for 3+ days, their tree shows as **resting** (sleepy, softer colors). It never shrinks, wilts, or dies. It wakes up on their next check-in.
 
 ### Water drops (currency, per person)
-- Reading a chapter earns 10 drops. Adding a reflection earns +3, and adding a photo earns +3.
-- Drops belong to the person, not the group — your balance is everything you've earned from your own check-ins across *every* group you're in, plus mission bonuses (see below), minus everything you've personally spent.
+- Reading itself doesn't earn drops automatically anymore — drops come from explicitly collecting a "Daily drop" (see below) or a Missions bonus. This avoids double-counting the same chapter/reflection.
+- Drops belong to the person, not the group — your balance is everything you've collected from Daily drops plus Missions bonuses, across *every* group you're in, minus everything you've personally spent.
 - You can spend your drops in any group's shop. The item you buy joins that group's shared garden, but it's paid for from your own balance — so several people can each contribute items to the same garden using their own progress.
-- Compute the balance from the data every time (checkins + mission progress + purchases), never store it, so it can't drift out of sync.
+- Compute the balance from the data every time (daily_claims + mission progress + purchases), never store the balance itself, so it can't drift out of sync.
+
+### Daily drops (Today tab)
+- A "Daily drops" section on the Today tab, between "Today's reading" and "This week" — six small once-a-day tasks, each with a name, a verse reference, and a reward. Defined in `lib/mission-config.ts` (`DAILY_DROPS`).
+- Resets at midnight in the person's own local time.
+- Each row shows one of three states: **Growing** (not done yet, soft/disabled), **Collect** (done, tap to claim — sage green), **Collected ✓** (claimed today, muted). Tapping "Growing" on Daily Bread takes you to the group with today's unread chapter.
+- Tapping "Collect" adds the reward to the balance with a small animation. Each row can only be claimed once per day, even across devices — enforced by a `daily_claims` table (user_id, claim_key, claim_date) with a unique constraint, which Supabase checks for us.
+- When all 6 are collected, the section collapses to "All collected today ✓ · Come back tomorrow." (tap to expand again).
+- The lamb says "Fresh manna for today!" on the first collect of the day.
 
 ### Missions (bonus ways to earn drops)
 - A dedicated "Missions" tab (bottom nav, next to Read and Groups) — personal, not tied to one group. It counts your reading across every group combined.

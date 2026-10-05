@@ -3,6 +3,70 @@ import { BIBLE_BOOKS } from './bible-books';
 // One place to tweak mission titles, verses, rewards, and targets.
 export type MissionSection = 'period' | 'reading' | 'books' | 'community' | 'garden' | 'grace';
 
+// The "Daily drops" checklist on the Today tab — a fresh set of small,
+// once-a-day tasks, separate from the Missions tab's weekly/monthly and
+// lifetime missions below.
+export type DailyDropKey =
+  | 'morning_manna'
+  | 'daily_bread'
+  | 'fruit_of_the_lips'
+  | 'snapshot_of_grace'
+  | 'second_mile'
+  | 'stand_in_the_gap';
+
+export type DailyDropDef = {
+  key: DailyDropKey;
+  title: string;
+  verse: string;
+  description: string;
+  reward: number;
+};
+
+export const DAILY_DROPS: DailyDropDef[] = [
+  {
+    key: 'morning_manna',
+    title: 'Morning Manna',
+    verse: 'Lamentations 3:23',
+    description: 'Open Sprout today.',
+    reward: 2,
+  },
+  {
+    key: 'daily_bread',
+    title: 'Daily Bread',
+    verse: 'Matthew 6:11',
+    description: "Read today's chapter in any group.",
+    reward: 10,
+  },
+  {
+    key: 'fruit_of_the_lips',
+    title: 'Fruit of the Lips',
+    verse: 'Hebrews 13:15',
+    description: 'Add a reflection today.',
+    reward: 3,
+  },
+  {
+    key: 'snapshot_of_grace',
+    title: 'Snapshot of Grace',
+    verse: '',
+    description: 'Add a photo to a check-in today.',
+    reward: 3,
+  },
+  {
+    key: 'second_mile',
+    title: 'The Second Mile',
+    verse: 'Matthew 5:41',
+    description: 'Read 2 or more chapters today (catch-up counts).',
+    reward: 5,
+  },
+  {
+    key: 'stand_in_the_gap',
+    title: 'Stand in the Gap',
+    verse: 'Ezekiel 22:30',
+    description: 'Tap "Praying for you" on a prayer request today.',
+    reward: 2,
+  },
+];
+
 export type CountMetric =
   | 'totalCheckins'
   | 'reflections'

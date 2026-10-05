@@ -1,3 +1,4 @@
+import { DAILY_DROPS } from './mission-config';
 import { getGardenItem } from './garden-items';
 import { getMissionSummary } from './missions';
 import { supabase } from './supabase';
@@ -21,30 +22,35 @@ export async function getOwnedItemKeys(groupId: string): Promise<Set<string>> {
   return new Set((data ?? []).map((row) => row.item_key));
 }
 
-// Drops are personal: everything you've earned from your own check-ins
-// across every group you're in, plus mission bonuses, minus everything
-// you've spent in any group's shop. Always computed fresh from the data,
-// never stored, so it can't drift out of sync.
+// Drops are personal: everything you've earned — from collecting daily
+// drops and from Missions bonuses — across every group you're in, minus
+// everything you've spent in any group's shop. Always computed fresh from
+// the data, never stored, so it can't drift out of sync.
+//
+// Reading itself no longer earns drops automatically on check-in — that
+// used to double-count against the Today tab's "Daily drops" checklist
+// (Daily Bread / Fruit of the Lips / Snapshot of Grace cover the same
+// ground as a chapter + reflection + photo). Drops now only come from
+// explicitly collecting a daily drop or a Missions bonus.
 export async function getDropsSummary(): Promise<DropsSummary> {
   const userId = await requireUserId();
 
-  const [checkinsResult, spentResult, missionSummary] = await Promise.all([
-    supabase.from('checkins').select('reflection, photo_path').eq('user_id', userId),
+  const [claimsResult, spentResult, missionSummary] = await Promise.all([
+    supabase.from('daily_claims').select('claim_key').eq('user_id', userId),
     supabase.from('group_items').select('item_key').eq('bought_by', userId),
     getMissionSummary(),
   ]);
 
-  if (checkinsResult.error) throw checkinsResult.error;
+  if (claimsResult.error) throw claimsResult.error;
   if (spentResult.error) throw spentResult.error;
 
-  const earnedFromReading = (checkinsResult.data ?? []).reduce((total, checkin) => {
-    let amount = 10;
-    if (checkin.reflection) amount += 3;
-    if (checkin.photo_path) amount += 3;
-    return total + amount;
-  }, 0);
+  const rewardByKey = new Map(DAILY_DROPS.map((d) => [d.key, d.reward]));
+  const earnedFromDailyDrops = (claimsResult.data ?? []).reduce(
+    (total, row) => total + (rewardByKey.get(row.claim_key) ?? 0),
+    0
+  );
 
-  const earned = earnedFromReading + missionSummary.bonusDropsEarned;
+  const earned = earnedFromDailyDrops + missionSummary.bonusDropsEarned;
 
   const spent = (spentResult.data ?? []).reduce((total, row) => total + (getGardenItem(row.item_key)?.price ?? 0), 0);
 

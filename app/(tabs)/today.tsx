@@ -3,13 +3,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LambGuide } from '../../components/guide/LambGuide';
+import { DailyDrops } from '../../components/today/DailyDrops';
 import { MonthCalendar } from '../../components/today/MonthCalendar';
 import { Avatar } from '../../components/pixel/Avatar';
 import type { LambMood } from '../../components/pixel/lamb-sprites';
 import { ProgressBar } from '../../components/pixel/ProgressBar';
 import { Tree } from '../../components/pixel/Tree';
 import { buttonBase, COLORS, FONTS, HARD_SHADOW } from '../../components/theme';
+import { claimDailyDrop, getDailyDrops, type DailyDropKey, type DailyDropsSummary } from '../../lib/daily-drops';
 import { getMyDashboard, type MyDashboard } from '../../lib/dashboard';
+import { getDropsSummary } from '../../lib/drops';
 import { getErrorMessage } from '../../lib/error-message';
 import { getMyProfile, type Profile } from '../../lib/profile';
 import { getTreeStage, getTreeStageLabel, getNextStage, type TreeStage } from '../../lib/tree';
@@ -25,9 +28,18 @@ function greeting(): string {
   return 'Good evening';
 }
 
-function buildLambGuide(dashboard: MyDashboard, stage: TreeStage, grewStage: boolean): { message: string; pose: LambMood; sparkles: boolean } {
+function buildLambGuide(
+  dashboard: MyDashboard,
+  stage: TreeStage,
+  grewStage: boolean,
+  justCollectedFirst: boolean
+): { message: string; pose: LambMood; sparkles: boolean } {
   if (grewStage) {
     return { message: 'Your tree just grew! Keep going.', pose: 'happy', sparkles: true };
+  }
+
+  if (justCollectedFirst) {
+    return { message: 'Fresh manna for today!', pose: 'happy', sparkles: true };
   }
 
   const groupThatBoreFruit = dashboard.groups.find((row) => row.meetsHarvestThreshold);
@@ -65,14 +77,22 @@ function buildLambGuide(dashboard: MyDashboard, stage: TreeStage, grewStage: boo
 export default function TodayDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dashboard, setDashboard] = useState<MyDashboard | null>(null);
+  const [dailyDrops, setDailyDrops] = useState<DailyDropsSummary | null>(null);
+  const [balance, setBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [grewStage, setGrewStage] = useState(false);
+  const [justCollectedFirst, setJustCollectedFirst] = useState(false);
   const previousStageRef = useRef<TreeStage | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [myProfile, myDashboard] = await Promise.all([getMyProfile(), getMyDashboard()]);
+      const [myProfile, myDashboard, myDailyDrops, dropsSummary] = await Promise.all([
+        getMyProfile(),
+        getMyDashboard(),
+        getDailyDrops(),
+        getDropsSummary(),
+      ]);
       const newStage = getTreeStage(myDashboard.totalCheckins);
       const previousStage = previousStageRef.current;
       setGrewStage(
@@ -82,6 +102,8 @@ export default function TodayDashboard() {
 
       setProfile(myProfile);
       setDashboard(myDashboard);
+      setDailyDrops(myDailyDrops);
+      setBalance(dropsSummary.balance);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -116,7 +138,40 @@ export default function TodayDashboard() {
   const stage = getTreeStage(dashboard.totalCheckins);
   const nextStage = getNextStage(dashboard.totalCheckins);
   const weekPercent = Math.min(100, Math.round((dashboard.weekDaysRead / WEEKLY_PERSONAL_GOAL) * 100));
-  const lambGuide = buildLambGuide(dashboard, stage, grewStage);
+  const lambGuide = buildLambGuide(dashboard, stage, grewStage, justCollectedFirst);
+
+  async function handleCollect(key: DailyDropKey) {
+    if (!dailyDrops) return;
+    const row = dailyDrops.rows.find((r) => r.key === key);
+    if (!row || row.status !== 'collect') return;
+
+    const wasFirstOfDay = dailyDrops.collectedCount === 0;
+    const updatedRows = dailyDrops.rows.map((r) => (r.key === key ? { ...r, status: 'collected' as const } : r));
+    const updatedCollectedCount = dailyDrops.collectedCount + 1;
+    setDailyDrops({
+      rows: updatedRows,
+      collectedCount: updatedCollectedCount,
+      allCollected: updatedCollectedCount === updatedRows.length,
+    });
+    setBalance((prev) => prev + row.reward);
+    if (wasFirstOfDay) setJustCollectedFirst(true);
+
+    try {
+      await claimDailyDrop(key);
+    } catch {
+      // Resync with the server rather than leaving an optimistic state that
+      // might not match (e.g. the request actually failed).
+      load();
+    }
+  }
+
+  function handleDailyBreadPress() {
+    if (!dashboard) return;
+    const waitingGroup = dashboard.groups.find((row) => !row.checkedInToday);
+    if (waitingGroup) {
+      router.push(`/groups/${waitingGroup.group.id}/bible`);
+    }
+  }
 
   return (
     <ScrollView
@@ -166,16 +221,6 @@ export default function TodayDashboard() {
         </View>
       </View>
 
-      <View style={styles.card}>
-        <View style={styles.weekRow}>
-          <Text style={styles.cardTitle}>This week</Text>
-          <Text style={styles.weekValue}>
-            {dashboard.weekDaysRead} / {WEEKLY_PERSONAL_GOAL} days
-          </Text>
-        </View>
-        <ProgressBar percent={weekPercent} />
-      </View>
-
       <Text style={styles.sectionTitle}>Today's reading</Text>
       <View style={styles.readingList}>
         {dashboard.groups.length === 0 && (
@@ -200,6 +245,26 @@ export default function TodayDashboard() {
             )}
           </View>
         ))}
+      </View>
+
+      {dailyDrops && (
+        <DailyDrops
+          rows={dailyDrops.rows}
+          allCollected={dailyDrops.allCollected}
+          balance={balance}
+          onCollect={handleCollect}
+          onDailyBreadPress={handleDailyBreadPress}
+        />
+      )}
+
+      <View style={styles.card}>
+        <View style={styles.weekRow}>
+          <Text style={styles.cardTitle}>This week</Text>
+          <Text style={styles.weekValue}>
+            {dashboard.weekDaysRead} / {WEEKLY_PERSONAL_GOAL} days
+          </Text>
+        </View>
+        <ProgressBar percent={weekPercent} />
       </View>
 
       <MonthCalendar checkinDates={dashboard.checkinDates} />
