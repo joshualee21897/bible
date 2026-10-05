@@ -28,6 +28,13 @@ export function getLevelDecorKeys(levelIndex: number): GardenLevelDecorKey[] {
   return keys;
 }
 
+// The one decor icon a specific level adds — used to preview a locked
+// level's reward (e.g. in the Levels sheet) rather than everything unlocked
+// so far.
+export function getLevelDecorKey(levelIndex: number): GardenLevelDecorKey | null {
+  return DECOR_BY_LEVEL_INDEX[levelIndex] ?? null;
+}
+
 function buildTent(): PixelGridData {
   const grid = emptyGrid(SIZE);
   for (let y = 6; y <= 20; y++) {

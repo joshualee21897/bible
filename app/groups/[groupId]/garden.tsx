@@ -18,7 +18,7 @@ import { LevelUpCelebration } from '../../../components/garden/LevelUpCelebratio
 import { LambGuide } from '../../../components/guide/LambGuide';
 import { buildFlatFence, buildFlatGround } from '../../../components/pixel/flat-ground';
 import { GardenItemSprite } from '../../../components/pixel/GardenItemSprite';
-import { getLevelDecorKeys } from '../../../components/pixel/garden-level-decor';
+import { getLevelDecorKey, getLevelDecorKeys } from '../../../components/pixel/garden-level-decor';
 import { GardenLevelDecorSprite } from '../../../components/pixel/GardenLevelDecorSprite';
 import { Lamb } from '../../../components/pixel/Lamb';
 import { PixelGrid } from '../../../components/pixel/PixelGrid';
@@ -44,7 +44,8 @@ const PIXEL_SIZE = 3;
 const COLUMNS = 3;
 const SKY_HEIGHT = 70;
 const GROUND_BAND_HEIGHT = 32;
-const FENCE_HEIGHT = 24;
+const FENCE_ROWS = 12;
+const FENCE_PIXEL_SIZE = 2.4;
 const DEPOSIT_QUICK_AMOUNTS = [10, 50, 100];
 
 type SheetKind = 'balance' | 'invite' | 'levels' | 'deposit' | 'leave' | null;
@@ -76,7 +77,7 @@ export default function GroupGardenScreen() {
     [sceneWidth]
   );
   const fenceGrid = useMemo(
-    () => buildFlatFence(Math.round(sceneWidth / (FENCE_HEIGHT / 20))),
+    () => buildFlatFence(Math.round(sceneWidth / FENCE_PIXEL_SIZE), FENCE_ROWS),
     [sceneWidth]
   );
 
@@ -316,7 +317,7 @@ export default function GroupGardenScreen() {
           >
             {itemSlots.map(renderSlot)}
             <View style={styles.fenceRow}>
-              <PixelGrid grid={fenceGrid} pixelSize={FENCE_HEIGHT / 20} />
+              <PixelGrid grid={fenceGrid} pixelSize={FENCE_PIXEL_SIZE} />
             </View>
             {memberSlots.map(renderSlot)}
           </ScrollView>
@@ -419,12 +420,21 @@ export default function GroupGardenScreen() {
         <ScrollView style={styles.levelsList}>
           {GARDEN_LEVELS.map((level) => {
             const reached = level.index <= storehouse.progress.level.index;
+            const decorKey = getLevelDecorKey(level.index);
             return (
-              <View key={level.key} style={[styles.levelListRow, !reached && styles.levelListRowLocked]}>
-                <Text style={[styles.levelListName, !reached && styles.levelListTextLocked]}>
-                  {reached ? '🌿' : '🔒'} {level.name}
-                </Text>
-                <Text style={[styles.levelListVerse, !reached && styles.levelListTextLocked]}>{level.verse}</Text>
+              <View key={level.key} style={styles.levelListRow}>
+                <View style={styles.levelListPreview}>
+                  {decorKey && <GardenLevelDecorSprite decorKey={decorKey} pixelSize={2.4} />}
+                </View>
+                <View style={styles.levelListTextBlock}>
+                  <Text style={[styles.levelListName, !reached && styles.levelListTextLocked]}>
+                    {reached ? '🌿' : '🔒'} {level.name}
+                  </Text>
+                  <Text style={[styles.levelListVerse, !reached && styles.levelListTextLocked]}>{level.verse}</Text>
+                  {!reached && (
+                    <Text style={styles.levelListCost}>+{level.costFromPrevious} drops to unlock this</Text>
+                  )}
+                </View>
               </View>
             );
           })}
@@ -819,12 +829,31 @@ const styles = StyleSheet.create({
     maxHeight: 360,
   },
   levelListRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  levelListRowLocked: {
-    opacity: 0.45,
+  levelListPreview: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: COLORS.cream,
+  },
+  levelListTextBlock: {
+    flex: 1,
+  },
+  levelListCost: {
+    marginTop: 2,
+    fontFamily: FONTS.headingMedium,
+    fontSize: 11,
+    color: COLORS.sageDark,
   },
   levelListName: {
     fontFamily: FONTS.headingSemiBold,
